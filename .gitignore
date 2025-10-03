@@ -1,2 +1,30 @@
+# Jenkins workspace
 jenkins_home/workspace/
-jenkins_home/workspace/
+
+# SSH keys and sensitive files
+jenkins_home/.ssh/
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+
+# Credentials and secrets
+jenkins_home/secrets/
+jenkins_home/identity.key.enc
+jenkins_home/secret.key
+credentials.xml
