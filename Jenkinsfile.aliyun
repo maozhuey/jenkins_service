@@ -43,9 +43,9 @@ pipeline {
         PRODUCTION_SERVER = 'localhost'
         HEALTH_CHECK_URL = 'http://localhost:3003/api/health'
         // Remote ECS deployment configuration
-        ECS_HOST = "${env.ECS_HOST ?: 'your-ecs-host'}"
+        ECS_HOST = "${env.ECS_HOST ?: '60.205.0.185'}"
         ECS_USER = "${env.ECS_USER ?: 'root'}"
-        ECS_DEPLOY_PATH = "${env.ECS_DEPLOY_PATH ?: '/srv/tbk'}"
+        ECS_DEPLOY_PATH = "${env.ECS_DEPLOY_PATH ?: '/opt/apps/tbk'}"
     }
     
     stages {
@@ -236,7 +236,7 @@ pipeline {
                               echo "Starting services..."
                               docker compose -f aliyun-ecs-deploy.yml up -d tbk-production nginx-production
                               echo "Checking service health..."
-                              curl -fsSL http://localhost:8080/health || true
+                              curl -fsSL http://localhost:80/api/health || true
                             '
                         """
                         
