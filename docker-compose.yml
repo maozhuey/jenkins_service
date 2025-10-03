@@ -12,6 +12,7 @@ services:
     volumes:
       - ./jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./docker-daemon.json:/etc/docker/daemon.json:ro
     environment:
       - JENKINS_OPTS=--httpPort=8080
       - JAVA_OPTS=-Djenkins.install.runSetupWizard=false -Duser.timezone=Asia/Shanghai

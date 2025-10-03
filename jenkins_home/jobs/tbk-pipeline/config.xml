@@ -5,27 +5,71 @@
     <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@2.2273.v643f36ed9e94">
       <jobProperties/>
       <triggers/>
-      <parameters/>
+      <parameters>
+        <string>PROJECT</string>
+        <string>AUTO_DEPLOY_ENABLED</string>
+        <string>BRANCH_INFO</string>
+        <string>CONFIRM_PRODUCTION_DEPLOY</string>
+        <string>DEPLOY_STRATEGY</string>
+      </parameters>
       <options/>
     </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
   </actions>
-  <description>TBK项目的CI/CD流水线 - 基于main分支构建并部署到阿里云生产环境</description>
+  <description>TBK项目的CI/CD流水线 - 基于main分支构建并部署到阿里云生产环境
+
+⚠️ 重要提示：
+1. 仅主分支会执行构建
+2. 构建后会自动部署到生产环境</description>
   <keepDependencies>false</keepDependencies>
   <properties>
+    <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+      <triggers/>
+    </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
     <hudson.model.ParametersDefinitionProperty>
       <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>PROJECT</name>
+          <description>项目标识（对应 multi-project-config.json 中 projects 的键）</description>
+          <defaultValue>tbk</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>CONFIRM_PRODUCTION_DEPLOY</name>
+          <description>确认部署到生产环境 (谨慎操作)</description>
+          <defaultValue>false</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>AUTO_DEPLOY_ENABLED</name>
+          <description>启用自动部署到生产环境</description>
+          <defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.ChoiceParameterDefinition>
+          <name>DEPLOY_STRATEGY</name>
+          <description>部署策略</description>
+          <choices>
+            <string>rolling</string>
+            <string>recreate</string>
+            <string>blue-green</string>
+          </choices>
+        </hudson.model.ChoiceParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>BRANCH_INFO</name>
           <description>构建分支信息</description>
           <defaultValue>main (生产环境)</defaultValue>
           <trim>false</trim>
         </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>IMPORTANT_NOTICE</name>
+          <description>⚠️ 重要提示：
+1. 仅主分支会执行构建
+2. 构建后会自动部署到生产环境
 
+请确认您了解以上信息后再继续构建。</description>
+          <defaultValue>已知晓上述提示信息</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
-    <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
-      <triggers/>
-    </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
   </properties>
   <definition class="org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition" plugin="workflow-cps@4209.v83c4e257f1e9">
     <scm class="hudson.plugins.git.GitSCM" plugin="git@5.7.0">

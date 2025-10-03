@@ -1,0 +1,242 @@
+pipeline {
+    agent any
+    
+    parameters {
+        booleanParam(
+            name: 'CONFIRM_PRODUCTION_DEPLOY',
+            defaultValue: false,
+            description: '确认部署到生产环境 (谨慎操作)'
+        )
+        booleanParam(
+            name: 'AUTO_DEPLOY_ENABLED',
+            defaultValue: true,
+            description: '启用自动部署到生产环境'
+        )
+        choice(
+            name: 'DEPLOY_STRATEGY',
+            choices: ['rolling', 'recreate', 'blue-green'],
+            description: '部署策略'
+        )
+    }
+    
+    environment {
+        DOCKER_REGISTRY = 'crpi-p6joc7xl4atpiic8.cn-hangzhou.personal.cr.aliyuncs.com'
+        IMAGE_NAME = 'hanchanglin/tbk'
+        DOCKER_CREDENTIALS_ID = 'aliyun-acr-credentials'
+        BUILD_NUMBER_TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
+        PRODUCTION_SERVER = 'localhost'  // 生产服务器地址
+        HEALTH_CHECK_URL = 'http://localhost:3003/api/health'
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                echo '📥 Checking out source code...'
+                checkout scm
+                script {
+                    env.GIT_COMMIT = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+                    env.GIT_BRANCH = sh(returnStdout: true, script: 'git rev-parse --abbrev-ref HEAD').trim()
+                }
+                echo "🌿 Branch: ${env.GIT_BRANCH}"
+                echo "📝 Commit: ${env.GIT_COMMIT}"
+            }
+        }
+        
+        stage('Build Application') {
+            steps {
+                echo '🔨 Building Docker image...'
+                script {
+                    // 构建Docker镜像
+                    def image = docker.build("${env.DOCKER_REGISTRY}/${env.IMAGE_NAME}:${env.BUILD_NUMBER_TAG}")
+                    
+                    // 同时打上latest标签
+                    sh "docker tag ${env.DOCKER_REGISTRY}/${env.IMAGE_NAME}:${env.BUILD_NUMBER_TAG} ${env.DOCKER_REGISTRY}/${env.IMAGE_NAME}:latest"
+                    
+                    echo "✅ Docker image built successfully"
+                    echo "🏷️  Tags: ${env.BUILD_NUMBER_TAG}, latest"
+                }
+            }
+        }
+        
+        stage('Push to Registry') {
+            steps {
+                echo '📤 Pushing image to Aliyun ACR...'
+                script {
+                    docker.withRegistry("https://${env.DOCKER_REGISTRY}", env.DOCKER_CREDENTIALS_ID) {
+                        // 推送带版本号的镜像
+                        sh "docker push ${env.DOCKER_REGISTRY}/${env.IMAGE_NAME}:${env.BUILD_NUMBER_TAG}"
+                        
+                        // 推送latest镜像
+                        sh "docker push ${env.DOCKER_REGISTRY}/${env.IMAGE_NAME}:latest"
+                    }
+                }
+                echo '✅ Image pushed to registry successfully'
+            }
+        }
+        
+        stage('Deploy to Production') {
+            when {
+                allOf {
+                    expression { params.CONFIRM_PRODUCTION_DEPLOY == true }
+                    expression { params.AUTO_DEPLOY_ENABLED == true }
+                    expression { env.GIT_BRANCH == 'main' || env.GIT_BRANCH == 'master' }
+                }
+            }
+            steps {
+                echo '🚀 Deploying to Production Environment...'
+                script {
+                    try {
+                        // 执行自动部署脚本
+                        sh '''
+                            echo "开始生产环境自动部署..."
+                            
+                            # 设置脚本权限
+                            chmod +x scripts/auto-deploy-webhook.sh
+                            
+                            # 执行自动部署
+                            ./scripts/auto-deploy-webhook.sh
+                        '''
+                        
+                        echo '✅ Production deployment completed successfully'
+                        
+                        // 记录部署信息
+                        sh '''
+                            echo "部署信息记录:"
+                            echo "构建号: ${BUILD_NUMBER}"
+                            echo "Git提交: ${GIT_COMMIT}"
+                            echo "镜像标签: ${BUILD_NUMBER_TAG}"
+                            echo "部署时间: $(date)"
+                            echo "部署策略: ${DEPLOY_STRATEGY}"
+                        '''
+                        
+                    } catch (Exception e) {
+                        echo "❌ Production deployment failed: ${e.getMessage()}"
+                        
+                        // 部署失败时的处理
+                        sh '''
+                            echo "部署失败，检查服务状态..."
+                            docker-compose -f docker-compose.production.yml ps || true
+                            docker-compose -f docker-compose.production.yml logs --tail=50 tbk-production || true
+                        '''
+                        
+                        throw e
+                    }
+                }
+            }
+        }
+        
+        stage('Post-Deploy Verification') {
+            when {
+                allOf {
+                    expression { params.CONFIRM_PRODUCTION_DEPLOY == true }
+                    expression { params.AUTO_DEPLOY_ENABLED == true }
+                }
+            }
+            steps {
+                echo '🔍 Running post-deployment verification...'
+                script {
+                    // 健康检查
+                    sh '''
+                        echo "执行健康检查..."
+                        max_attempts=10
+                        attempt=1
+                        
+                        while [ $attempt -le $max_attempts ]; do
+                            if curl -f ${HEALTH_CHECK_URL} > /dev/null 2>&1; then
+                                echo "✅ 健康检查通过 (尝试 $attempt/$max_attempts)"
+                                break
+                            fi
+                            
+                            echo "⏳ 健康检查失败，重试中... (尝试 $attempt/$max_attempts)"
+                            sleep 15
+                            attempt=$((attempt + 1))
+                            
+                            if [ $attempt -gt $max_attempts ]; then
+                                echo "❌ 健康检查失败"
+                                exit 1
+                            fi
+                        done
+                    '''
+                    
+                    // 服务状态检查
+                    sh '''
+                        echo "检查服务状态..."
+                        docker-compose -f docker-compose.production.yml ps
+                        
+                        echo "检查容器健康状态..."
+                        docker ps --filter "name=tbk-tbk-production" --format "table {{.Names}}\\t{{.Status}}\\t{{.Ports}}"
+                    '''
+                    
+                    echo '✅ Post-deployment verification completed'
+                }
+            }
+        }
+        
+        stage('Build Only Summary') {
+            when {
+                expression { params.CONFIRM_PRODUCTION_DEPLOY != true }
+            }
+            steps {
+                echo '📋 构建完成 - 仅构建模式'
+                echo '🚫 跳过生产环境部署（未确认部署）'
+                echo '✅ Docker镜像已构建并推送到阿里云ACR'
+                echo '💡 如需部署，请重新运行构建并确认生产环境部署'
+                
+                script {
+                    echo "📦 构建信息:"
+                    echo "  - 镜像: ${env.DOCKER_REGISTRY}/${env.IMAGE_NAME}:${env.BUILD_NUMBER_TAG}"
+                    echo "  - 镜像: ${env.DOCKER_REGISTRY}/${env.IMAGE_NAME}:latest"
+                    echo "  - Git分支: ${env.GIT_BRANCH}"
+                    echo "  - Git提交: ${env.GIT_COMMIT}"
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo '🧹 Cleaning up workspace...'
+            sh '''
+                # 清理本地构建的镜像（保留最新的几个）
+                docker images ${DOCKER_REGISTRY}/${IMAGE_NAME} --format "table {{.ID}}\\t{{.CreatedAt}}" | \\
+                tail -n +2 | sort -k2 -r | tail -n +6 | awk '{print $1}' | \\
+                xargs -r docker rmi -f 2>/dev/null || true
+                
+                # 清理悬空镜像
+                docker image prune -f || true
+                
+                echo "清理完成"
+            '''
+        }
+        
+        success {
+            echo '🎉 Pipeline completed successfully!'
+            script {
+                if (params.CONFIRM_PRODUCTION_DEPLOY && params.AUTO_DEPLOY_ENABLED) {
+                    echo '✅ 生产环境部署成功'
+                    echo "🌐 应用访问地址: http://${env.PRODUCTION_SERVER}:3003"
+                } else {
+                    echo '✅ 镜像构建成功，等待手动部署'
+                }
+            }
+        }
+        
+        failure {
+            echo '❌ Pipeline failed!'
+            script {
+                // 发送失败通知
+                sh '''
+                    echo "构建失败通知:"
+                    echo "  - 构建号: ${BUILD_NUMBER}"
+                    echo "  - 分支: ${GIT_BRANCH}"
+                    echo "  - 提交: ${GIT_COMMIT}"
+                    echo "  - 失败时间: $(date)"
+                '''
+            }
+        }
+        
+        unstable {
+            echo '⚠️ Pipeline completed with warnings'
+        }
+    }
+}

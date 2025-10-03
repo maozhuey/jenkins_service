@@ -1,11 +1,9 @@
 version: '3.8'
 
 services:
-  # TBK Production Application
+  # TBK Production Application - 从阿里云ACR拉取Jenkins构建的镜像
   tbk-production:
-    build:
-      context: /Users/hanchanglin/Documents/知农/桃百科/tbk
-      dockerfile: Dockerfile
+    image: crpi-p6joc7xl4atpiic8.cn-hangzhou.personal.cr.aliyuncs.com/hanchanglin/tbk:latest
     container_name: tbk-tbk-production-1
     ports:
       - "3003:3000"
@@ -34,6 +32,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    # 确保总是拉取最新镜像
+    pull_policy: always
 
 networks:
   tbk-prod-net:
