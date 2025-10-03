@@ -32,6 +32,13 @@ jenkins_home/credentials.xml.backup*
 jenkins_home/credentials.xml.rollback*
 scripts/setup-dockerhub-credentials.sh
 
-# 备份文件
+# Backup files
 *.backup
 *.rollback-backup*
+*backup*
+
+# Private keys (additional patterns)
+*private*key*
+*id_rsa*
+*id_ed25519*
+*ssh_host_*
