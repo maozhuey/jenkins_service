@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<l:dependencies xmlns:l='licenses' groupId='io.jenkins.plugins' artifactId='localization-support' version='1.41.v186a_c1569458'><l:dependency name='Localization Support Plugin' groupId='io.jenkins.plugins' artifactId='localization-support' version='1.41.v186a_c1569458' url='https://github.com/jenkinsci/localization-support-plugin'><l:description>The Jenkins Plugins Parent POM Project</l:description><l:license name='MIT License' url='https://opensource.org/licenses/MIT'/></l:dependency></l:dependencies>

@@ -1,0 +1,26 @@
+Manifest-Version: 1.0
+Created-By: Maven Archiver 3.6.0
+Build-Jdk-Spec: 17
+Specification-Title: Publish Over SSH
+Specification-Version: 0.0
+Implementation-Title: Publish Over SSH
+Implementation-Version: 390.vb_f56e7405751
+Group-Id: org.jenkins-ci.plugins
+Artifact-Id: publish-over-ssh
+Short-Name: publish-over-ssh
+Long-Name: Publish Over SSH
+Url: https://github.com/jenkinsci/publish-over-ssh-plugin
+Plugin-Version: 390.vb_f56e7405751
+Hudson-Version: 2.479.1
+Jenkins-Version: 2.479.1
+Plugin-Dependencies: jackson2-api:2.17.0-379.v02de8ec9f64c,jsch:0.2.16-8
+ 6.v42e010d9484b_,publish-over:0.22,structs:338.v848422169819
+Plugin-Developers: slide:slide_o_mix:slide.o.mix@gmail.com
+Plugin-License-Name: The MIT license
+Plugin-License-Url: https://opensource.org/license/mit/
+Plugin-ScmConnection: scm:git:https://github.com/jenkinsci/publish-over-
+ ssh-plugin.git
+Plugin-ScmTag: bf56e740575155b788374d21462354632cb9f5fd
+Plugin-ScmUrl: https://github.com/jenkinsci/publish-over-ssh-plugin
+Implementation-Build: bf56e740575155b788374d21462354632cb9f5fd
+

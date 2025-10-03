@@ -1,0 +1,55 @@
+# Development Environment Dockerfile for TBK Project
+# This Dockerfile is optimized for development with debugging tools and hot reload
+
+FROM node:18-alpine
+
+# Set development environment
+ENV NODE_ENV=development
+ENV PORT=3000
+
+# Install development tools and utilities
+RUN apk add --no-cache \
+    git \
+    curl \
+    vim \
+    bash \
+    && npm install -g nodemon pm2
+
+# Create app directory
+WORKDIR /usr/src/app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies conditionally: use npm ci if lockfile exists, otherwise npm install
+RUN if [ -f package-lock.json ]; then \
+      echo "Using npm ci (lockfile found)" && npm ci; \
+    else \
+      echo "package-lock.json not found; using npm install" && npm install; \
+    fi
+
+# Copy source code
+COPY . .
+
+# Create logs directory
+RUN mkdir -p logs
+
+# Add development user (non-root for security)
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S tbkdev -u 1001 -G nodejs
+
+# Change ownership of app directory
+RUN chown -R tbkdev:nodejs /usr/src/app
+
+# Switch to development user
+USER tbkdev
+
+# Expose development port
+EXPOSE 3000
+
+# Add health check for development
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3000/health || curl -f http://localhost:3000/ || exit 1
+
+# Development startup script with hot reload
+CMD ["npm", "run", "dev"]

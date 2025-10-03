@@ -1,0 +1,2 @@
+2025/10/03 11:16:12 [error] 29#29: *2 connect() failed (111: Connection refused) while connecting to upstream, client: 192.168.65.1, server: dev.tbk.example.com, request: "HEAD / HTTP/2.0", upstream: "http://172.20.0.4:3000/", host: "localhost"
+2025/10/03 12:18:47 [error] 233#233: *27 connect() failed (111: Connection refused) while connecting to upstream, client: 192.168.65.1, server: dev.tbk.example.com, request: "GET /api/health HTTP/2.0", upstream: "http://172.20.0.4:80/api/health", host: "127.0.0.1"

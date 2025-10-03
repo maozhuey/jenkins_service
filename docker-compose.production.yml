@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # TBK Production Application
+  tbk-production:
+    build:
+      context: /Users/hanchanglin/Documents/知农/桃百科/tbk
+      dockerfile: Dockerfile
+    container_name: tbk-tbk-production-1
+    ports:
+      - "3003:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_HOST=60.205.0.185
+      - DB_USER=peach_wiki
+      - DB_PASSWORD=han0419/
+      - DB_NAME=peach_wiki
+      - DB_PORT=3306
+      - REDIS_HOST=60.205.0.185
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=han0419
+      - SSL_ENABLED=true
+      - TRUST_PROXY=true
+      - LOG_LEVEL=info
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - tbk-prod-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  tbk-prod-net:
+    driver: bridge

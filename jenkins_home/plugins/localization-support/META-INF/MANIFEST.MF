@@ -1,0 +1,24 @@
+Manifest-Version: 1.0
+Created-By: Maven Archiver 3.6.4
+Build-Jdk-Spec: 17
+Specification-Title: Localization Support Plugin
+Specification-Version: 0.0
+Implementation-Title: Localization Support Plugin
+Implementation-Version: 1.41.v186a_c1569458
+Group-Id: io.jenkins.plugins
+Artifact-Id: localization-support
+Short-Name: localization-support
+Long-Name: Localization Support Plugin
+Url: https://github.com/jenkinsci/localization-support-plugin
+Plugin-Version: 1.41.v186a_c1569458
+Hudson-Version: 2.479.3
+Jenkins-Version: 2.479.3
+Plugin-Developers: 
+Plugin-License-Name: MIT License
+Plugin-License-Url: https://opensource.org/licenses/MIT
+Plugin-ScmConnection: scm:git:https://github.com/jenkinsci/localization-
+ support-plugin.git
+Plugin-ScmTag: 186ac1569458fe21603f04787818e99a3c7d0bf6
+Plugin-ScmUrl: https://github.com/jenkinsci/localization-support-plugin
+Implementation-Build: 186ac1569458fe21603f04787818e99a3c7d0bf6
+

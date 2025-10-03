@@ -1,0 +1,10 @@
+commit 833207adbf674606bc3848e39f4258b3fae81d96
+tree 6829202770ecf0056d217f57a9c3664d454dff24
+parent 262005a6e1463d1fcba813c3faff405da5269efc
+author maozhuey <1187928261@qq.com> 2025-10-03 16:05:34 +0800
+committer maozhuey <1187928261@qq.com> 2025-10-03 16:05:34 +0800
+
+    Update ACR registry to personal address
+
+
+:100644 100644 8fb08873acdd5d9149695089a7df0222f5ce0e86 f9a2cec1aed19864a0b2128c12afe3df671f8b26 M	Jenkinsfile.aliyun

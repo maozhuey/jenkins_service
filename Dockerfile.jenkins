@@ -1,0 +1,61 @@
+FROM jenkins/jenkins:lts
+
+# 切换到 root 用户安装 Docker
+USER root
+
+# 安装 Docker 客户端和 Node.js
+RUN apt-get update && \
+    apt-get install -y \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release && \
+    # 安装 Docker
+    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    apt-get update && \
+    apt-get install -y docker-ce-cli && \
+    # 安装 Node.js 18.x LTS
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
+    # 验证安装
+    node --version && \
+    npm --version && \
+    # 清理缓存
+    rm -rf /var/lib/apt/lists/*
+
+# 将 jenkins 用户添加到 docker 组
+RUN groupadd -f docker && usermod -aG docker jenkins
+
+# 创建启动脚本来处理 Docker socket 权限
+RUN echo '#!/bin/bash\n\
+# 如果 Docker socket 存在，修改其权限\n\
+if [ -S /var/run/docker.sock ]; then\n\
+    chmod 666 /var/run/docker.sock\n\
+fi\n\
+# 确保 Jenkins 目录的所有权正确\n\
+chown -R jenkins:jenkins /var/jenkins_home\n\
+# 切换到 jenkins 用户并启动 Jenkins\n\
+exec runuser -u jenkins -- /usr/local/bin/jenkins.sh "$@"' > /usr/local/bin/docker-entrypoint.sh && \
+    chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# 使用自定义入口点
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+
+# 安装推荐的插件
+RUN jenkins-plugin-cli --plugins \
+    blueocean \
+    docker-workflow \
+    docker-plugin \
+    git \
+    github \
+    pipeline-stage-view \
+    workflow-aggregator \
+    ssh-agent \
+    credentials-binding \
+    timestamper \
+    ws-cleanup \
+    build-timeout \
+    ant \
+    gradle

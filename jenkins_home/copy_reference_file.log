@@ -1,0 +1,174 @@
+--- Copying files at Thu Oct  2 13:07:43 UTC 2025
+--- Copied files finished at Thu Oct  2 13:07:43 UTC 2025
+--- Copying files at Thu Oct  2 13:50:25 UTC 2025
+INSTALLED plugins/publish-over-ssh.jpi : 390.vb_f56e7405751
+INSTALLED plugins/blueocean-core-js.jpi : 1.27.21
+INSTALLED plugins/ssh-agent.jpi : 386.v36cc0c7582f0
+INSTALLED plugins/blueocean-web.jpi : 1.27.21
+INSTALLED plugins/blueocean-personalization.jpi : 1.27.21
+INSTALLED plugins/htmlpublisher.jpi : 427
+INSTALLED plugins/blueocean-i18n.jpi : 1.27.21
+INSTALLED plugins/blueocean-pipeline-scm-api.jpi : 1.27.21
+INSTALLED plugins/jsch.jpi : 0.2.16-95.v3eecb_55fa_b_78
+INSTALLED plugins/blueocean-display-url.jpi : 2.4.4
+INSTALLED plugins/blueocean.jpi : 1.27.21
+INSTALLED plugins/blueocean-git-pipeline.jpi : 1.27.21
+INSTALLED plugins/blueocean-rest-impl.jpi : 1.27.21
+INSTALLED plugins/pubsub-light.jpi : 1.19
+INSTALLED plugins/commons-collections4-api.jpi : 4.5.0-8.va_d5448ef9011
+INSTALLED plugins/pipeline-rest-api.jpi : 2.38
+INSTALLED plugins/apache-httpcomponents-client-5-api.jpi : 5.5-170.v023de017ccd7
+INSTALLED plugins/blueocean-bitbucket-pipeline.jpi : 1.27.21
+INSTALLED plugins/cloudbees-bitbucket-branch-source.jpi : 937.0.4
+INSTALLED plugins/docker-workflow.jpi : 621.va_73f881d9232
+INSTALLED plugins/authentication-tokens.jpi : 1.144.v5ff4a_5ec5c33
+INSTALLED plugins/blueocean-pipeline-api-impl.jpi : 1.27.21
+INSTALLED plugins/blueocean-commons.jpi : 1.27.21
+INSTALLED plugins/handy-uri-templates-2-api.jpi : 2.1.8-36.v85e4cb_234a_13
+INSTALLED plugins/configuration-as-code.jpi : 1995.v540b_50a_eb_0c1
+INSTALLED plugins/blueocean-config.jpi : 1.27.21
+INSTALLED plugins/favorite.jpi : 2.253.v9b_413168133b_
+INSTALLED plugins/blueocean-jwt.jpi : 1.27.21
+INSTALLED plugins/prism-api.jpi : 1.30.0-630.va_e19d17f83b_0
+INSTALLED plugins/pipeline-stage-view.jpi : 2.38
+INSTALLED plugins/blueocean-pipeline-editor.jpi : 1.27.21
+INSTALLED plugins/blueocean-rest.jpi : 1.27.21
+INSTALLED plugins/sse-gateway.jpi : 1.28
+INSTALLED plugins/blueocean-github-pipeline.jpi : 1.27.21
+INSTALLED plugins/blueocean-dashboard.jpi : 1.27.21
+INSTALLED plugins/jenkins-design-language.jpi : 1.27.21
+INSTALLED plugins/blueocean-events.jpi : 1.27.21
+INSTALLED plugins/publish-over.jpi : 0.22
+INSTALLED plugins/pipeline-graph-analysis.jpi : 245.v88f03631a_b_21
+INSTALLED plugins/docker-commons.jpi : 457.v0f62a_94f11a_3
+--- Copied files finished at Thu Oct  2 13:50:26 UTC 2025
+--- Copying files at Thu Oct  2 14:10:33 UTC 2025
+--- Copied files finished at Thu Oct  2 14:10:34 UTC 2025
+--- Copying files at Thu Oct  2 14:16:10 UTC 2025
+--- Copied files finished at Thu Oct  2 14:16:11 UTC 2025
+--- Copying files at Thu Oct  2 15:00:30 UTC 2025
+--- Copied files finished at Thu Oct  2 15:00:30 UTC 2025
+--- Copying files at Thu Oct  2 15:09:05 UTC 2025
+--- Copied files finished at Thu Oct  2 15:09:06 UTC 2025
+--- Copying files at Thu Oct  2 15:14:52 UTC 2025
+--- Copied files finished at Thu Oct  2 15:14:53 UTC 2025
+--- Copying files at Thu Oct  2 15:59:38 UTC 2025
+--- Copied files finished at Thu Oct  2 15:59:38 UTC 2025
+--- Copying files at Thu Oct  2 16:07:24 UTC 2025
+--- Copied files finished at Thu Oct  2 16:07:25 UTC 2025
+--- Copying files at Thu Oct  2 16:16:49 UTC 2025
+--- Copied files finished at Thu Oct  2 16:16:49 UTC 2025
+--- Copying files at Thu Oct  2 16:41:20 UTC 2025
+--- Copied files finished at Thu Oct  2 16:41:21 UTC 2025
+--- Copying files at Thu Oct  2 16:48:40 UTC 2025
+--- Copied files finished at Thu Oct  2 16:48:40 UTC 2025
+--- Copying files at Thu Oct  2 17:38:07 UTC 2025
+--- Copied files finished at Thu Oct  2 17:38:07 UTC 2025
+--- Copying files at Thu Oct  2 17:54:46 UTC 2025
+--- Copied files finished at Thu Oct  2 17:54:46 UTC 2025
+--- Copying files at Thu Oct  2 18:04:22 UTC 2025
+--- Copied files finished at Thu Oct  2 18:04:22 UTC 2025
+--- Copying files at Thu Oct  2 18:08:54 UTC 2025
+--- Copied files finished at Thu Oct  2 18:08:54 UTC 2025
+--- Copying files at Thu Oct  2 18:12:05 UTC 2025
+--- Copied files finished at Thu Oct  2 18:12:05 UTC 2025
+--- Copying files at Thu Oct  2 18:12:12 UTC 2025
+--- Copied files finished at Thu Oct  2 18:12:12 UTC 2025
+--- Copying files at Thu Oct  2 18:13:56 UTC 2025
+--- Copied files finished at Thu Oct  2 18:13:56 UTC 2025
+--- Copying files at Thu Oct  2 18:20:41 UTC 2025
+--- Copied files finished at Thu Oct  2 18:20:41 UTC 2025
+--- Copying files at Thu Oct  2 20:28:42 UTC 2025
+--- Copied files finished at Thu Oct  2 20:28:42 UTC 2025
+--- Copying files at Thu Oct  2 20:41:15 UTC 2025
+--- Copied files finished at Thu Oct  2 20:41:15 UTC 2025
+--- Copying files at Thu Oct  2 20:53:14 UTC 2025
+--- Copied files finished at Thu Oct  2 20:53:14 UTC 2025
+--- Copying files at Thu Oct  2 21:09:35 UTC 2025
+--- Copied files finished at Thu Oct  2 21:09:35 UTC 2025
+--- Copying files at Thu Oct  2 21:11:17 UTC 2025
+--- Copied files finished at Thu Oct  2 21:11:17 UTC 2025
+--- Copying files at Thu Oct  2 21:27:58 UTC 2025
+--- Copied files finished at Thu Oct  2 21:27:58 UTC 2025
+--- Copying files at Thu Oct  2 21:29:44 UTC 2025
+--- Copied files finished at Thu Oct  2 21:29:44 UTC 2025
+--- Copying files at Fri Oct  3 05:40:09 UTC 2025
+--- Copied files finished at Fri Oct  3 05:40:09 UTC 2025
+--- Copying files at Fri Oct  3 05:44:58 UTC 2025
+INSTALLED plugins/cloud-stats.jpi : 377.vd8a_6c953e98e
+INSTALLED plugins/docker-plugin.jpi : 1274.vc0203fdf2e74
+INSTALLED plugins/commons-compress-api.jpi : 1.28.0-1
+INSTALLED plugins/docker-java-api.jpi : 3.6.0-129.vf6f5db_c0f589
+--- Copied files finished at Fri Oct  3 05:44:59 UTC 2025
+--- Copying files at Fri Oct  3 05:58:18 UTC 2025
+--- Copied files finished at Fri Oct  3 05:58:18 UTC 2025
+--- Copying files at Fri Oct  3 06:01:00 UTC 2025
+--- Copied files finished at Fri Oct  3 06:01:01 UTC 2025
+--- Copying files at Fri Oct  3 06:03:39 UTC 2025
+--- Copying files at Fri Oct  3 06:03:40 UTC 2025
+--- Copying files at Fri Oct  3 06:03:41 UTC 2025
+--- Copying files at Fri Oct  3 06:03:42 UTC 2025
+--- Copying files at Fri Oct  3 06:03:44 UTC 2025
+--- Copying files at Fri Oct  3 06:03:46 UTC 2025
+--- Copying files at Fri Oct  3 06:03:50 UTC 2025
+--- Copying files at Fri Oct  3 06:03:57 UTC 2025
+--- Copying files at Fri Oct  3 06:04:10 UTC 2025
+--- Copying files at Fri Oct  3 06:04:37 UTC 2025
+--- Copying files at Fri Oct  3 06:06:37 UTC 2025
+--- Copied files finished at Fri Oct  3 06:06:38 UTC 2025
+--- Copying files at Fri Oct  3 06:21:25 UTC 2025
+--- Copied files finished at Fri Oct  3 06:21:25 UTC 2025
+--- Copying files at Fri Oct  3 06:41:51 UTC 2025
+--- Copied files finished at Fri Oct  3 06:41:51 UTC 2025
+--- Copying files at Fri Oct  3 06:43:38 UTC 2025
+--- Copied files finished at Fri Oct  3 06:43:38 UTC 2025
+--- Copying files at Fri Oct  3 06:48:58 UTC 2025
+--- Copied files finished at Fri Oct  3 06:48:59 UTC 2025
+--- Copying files at Fri Oct  3 07:24:03 UTC 2025
+--- Copied files finished at Fri Oct  3 07:24:04 UTC 2025
+--- Copying files at Fri Oct  3 07:43:41 UTC 2025
+--- Copied files finished at Fri Oct  3 07:43:42 UTC 2025
+--- Copying files at Fri Oct  3 07:44:33 UTC 2025
+--- Copied files finished at Fri Oct  3 07:44:34 UTC 2025
+--- Copying files at Fri Oct  3 09:00:51 UTC 2025
+--- Copied files finished at Fri Oct  3 09:00:52 UTC 2025
+--- Copying files at Fri Oct  3 17:01:50 CST 2025
+--- Copied files finished at Fri Oct  3 17:01:51 CST 2025
+--- Copying files at Fri Oct  3 17:08:54 CST 2025
+--- Copied files finished at Fri Oct  3 17:08:54 CST 2025
+--- Copying files at Fri Oct  3 20:42:53 CST 2025
+--- Copied files finished at Fri Oct  3 20:42:53 CST 2025
+--- Copying files at Fri Oct  3 20:55:25 CST 2025
+--- Copied files finished at Fri Oct  3 20:55:25 CST 2025
+--- Copying files at Fri Oct  3 20:59:26 CST 2025
+--- Copied files finished at Fri Oct  3 20:59:27 CST 2025
+--- Copying files at Fri Oct  3 21:00:38 CST 2025
+--- Copied files finished at Fri Oct  3 21:00:38 CST 2025
+--- Copying files at Fri Oct  3 21:03:47 CST 2025
+--- Copied files finished at Fri Oct  3 21:03:48 CST 2025
+--- Copying files at Fri Oct  3 21:06:28 CST 2025
+--- Copied files finished at Fri Oct  3 21:06:29 CST 2025
+--- Copying files at Fri Oct  3 21:12:06 CST 2025
+--- Copied files finished at Fri Oct  3 21:12:07 CST 2025
+--- Copying files at Fri Oct  3 21:17:53 CST 2025
+--- Copied files finished at Fri Oct  3 21:17:54 CST 2025
+--- Copying files at Fri Oct  3 21:20:51 CST 2025
+--- Copied files finished at Fri Oct  3 21:20:51 CST 2025
+--- Copying files at Fri Oct  3 21:23:41 CST 2025
+--- Copied files finished at Fri Oct  3 21:23:42 CST 2025
+--- Copying files at Fri Oct  3 21:26:11 CST 2025
+--- Copied files finished at Fri Oct  3 21:26:11 CST 2025
+--- Copying files at Fri Oct  3 21:32:58 CST 2025
+--- Copied files finished at Fri Oct  3 21:32:59 CST 2025
+--- Copying files at Fri Oct  3 21:35:41 CST 2025
+--- Copied files finished at Fri Oct  3 21:35:42 CST 2025
+--- Copying files at Fri Oct  3 21:38:28 CST 2025
+--- Copied files finished at Fri Oct  3 21:38:29 CST 2025
+--- Copying files at Fri Oct  3 21:41:52 CST 2025
+--- Copied files finished at Fri Oct  3 21:41:52 CST 2025
+--- Copying files at Fri Oct  3 21:58:46 CST 2025
+--- Copied files finished at Fri Oct  3 21:58:46 CST 2025
+--- Copying files at Fri Oct  3 22:05:34 CST 2025
+--- Copied files finished at Fri Oct  3 22:05:35 CST 2025
+--- Copying files at Fri Oct  3 22:07:46 CST 2025
+--- Copied files finished at Fri Oct  3 22:07:46 CST 2025

@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # TBK Local Application
+  tbk-local:
+    build:
+      context: /Users/hanchanglin/Documents/知农/桃百科/tbk
+      dockerfile: Dockerfile
+    container_name: tbk-local
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=local
+      - PORT=3000
+      - DB_HOST=mysql-local
+      - DB_USER=${DB_USER:-tbk_user}
+      - DB_PASSWORD=${DB_PASSWORD:-han0419/}
+      - DB_NAME=${DB_NAME:-tbk_dev}
+      - DB_PORT=${DB_PORT:-3306}
+      - REDIS_HOST=redis-local
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-han0419}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3001}
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
+      - HOT_RELOAD=${HOT_RELOAD:-true}
+    volumes:
+      - /Users/hanchanglin/Documents/知农/桃百科/tbk:/usr/src/app
+      - /usr/src/app/node_modules
+      - ./logs:/usr/src/app/logs
+    networks:
+      - tbk-local-network
+    depends_on:
+      mysql-local:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Local MySQL Database
+  mysql-local:
+    image: mysql:8.0
+    container_name: mysql-local
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-han0419/}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-tbk_dev}
+      MYSQL_USER: ${DB_USER:-tbk_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-han0419/}
+    volumes:
+      - mysql_local_data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d
+    networks:
+      - tbk-local-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Redis for Local Development
+  redis-local:
+    image: redis:7-alpine
+    container_name: redis-local
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass ${REDIS_PASSWORD:-han0419}
+    volumes:
+      - redis_local_data:/data
+    networks:
+      - tbk-local-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  tbk-local-network:
+    driver: bridge
+
+volumes:
+  mysql_local_data:
+  redis_local_data:

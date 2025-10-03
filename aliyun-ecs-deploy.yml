@@ -1,0 +1,123 @@
+# 阿里云ECS部署配置
+# TBK Development Environment - Aliyun ECS Deployment Configuration
+
+version: '3.8'
+
+services:
+  # TBK应用服务
+  tbk-production:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: tbk-production
+    restart: unless-stopped
+    ports:
+      - "80:3000"
+      - "443:3000"
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=60.205.0.185
+      - DB_USER=peach_wiki
+      - DB_PASSWORD=han0419/
+      - DB_NAME=peach_wiki
+      - DB_PORT=3306
+      - REDIS_PASSWORD=han0419
+      - PUBLIC_ACCESS=true
+      - TRUST_PROXY=true
+      - CORS_ORIGIN=*
+      - LOG_LEVEL=info
+      - SSL_ENABLED=true
+    volumes:
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+      - ./ssl:/app/ssl:ro
+    networks:
+      - tbk-production-network
+    depends_on:
+      - redis-production
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Nginx反向代理
+  nginx-production:
+    image: nginx:alpine
+    container_name: nginx-production
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - ./nginx/production.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./logs/nginx:/var/log/nginx
+    networks:
+      - tbk-production-network
+    depends_on:
+      - tbk-production
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis缓存服务
+  redis-production:
+    image: redis:7-alpine
+    container_name: redis-production
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass han0419 --appendonly yes
+    volumes:
+      - redis-production-data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    networks:
+      - tbk-production-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "han0419", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 监控服务 - Portainer
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer-production
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer-data:/data
+    networks:
+      - tbk-production-network
+
+  # 日志收集 - Fluentd (可选)
+  fluentd:
+    image: fluent/fluentd:v1.16-debian-1
+    container_name: fluentd-production
+    restart: unless-stopped
+    ports:
+      - "24224:24224"
+    volumes:
+      - ./fluentd/fluent.conf:/fluentd/etc/fluent.conf:ro
+      - ./logs:/var/log/app
+    networks:
+      - tbk-production-network
+
+volumes:
+  redis-production-data:
+    driver: local
+  portainer-data:
+    driver: local
+
+networks:
+  tbk-production-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

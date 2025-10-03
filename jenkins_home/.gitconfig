@@ -1,0 +1,5 @@
+[user]
+	name = Jenkins
+	email = jenkins@localhost
+[core]
+	sshCommand = ssh -i /var/jenkins_home/.ssh/id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null

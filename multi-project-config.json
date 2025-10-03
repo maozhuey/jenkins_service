@@ -1,0 +1,97 @@
+{
+  "version": "1.0.0",
+  "description": "多项目环境管理配置",
+  "global_settings": {
+    "base_port": 3000,
+    "port_increment": 10,
+    "default_environment": "local",
+    "database_host_local": "localhost",
+    "database_host_cloud": "60.205.0.185"
+  },
+  "projects": {
+    "jenkins-service": {
+      "name": "Jenkins Service",
+      "path": "/Users/hanchanglin/AI编程代码库/jenkins-service",
+      "environments": {
+        "local": {
+          "port": 3001,
+          "database": "local",
+          "docker_network": "jenkins-local-net"
+        },
+        "production": {
+          "port": 3000,
+          "database": "cloud",
+          "docker_network": "jenkins-prod-net"
+        }
+      },
+      "current_environment": "local",
+      "database_config": {
+        "local": {
+          "host": "localhost",
+          "port": 3307,
+          "database": "tbk_dev",
+          "user": "tbk_user",
+          "password": "tbk_password"
+        },
+        "cloud": {
+          "host": "60.205.0.185",
+          "port": 3306,
+          "database": "peach_wiki",
+          "user": "peach_wiki",
+          "password": "han0419/"
+        }
+      }
+    },
+    "tbk": {
+      "name": "tbk",
+      "path": "/Users/hanchanglin/Documents/知农/桃百科/tbk",
+      "type": "node",
+      "environments": {
+        "local": {
+          "port": 3001,
+          "database": "local",
+          "docker_network": "tbk-local-net"
+        },
+        "production": {
+          "port": 3003,
+          "database": "cloud",
+          "docker_network": "tbk-prod-net"
+        }
+      },
+      "current_environment": "production",
+      "database_config": {
+        "local": {
+          "host": "localhost",
+          "port": 3307,
+          "database": "tbk_dev",
+          "user": "tbk_user",
+          "password": "tbk_password"
+        },
+        "cloud": {
+          "host": "60.205.0.185",
+          "port": 3306,
+          "database": "peach_wiki",
+          "user": "peach_wiki",
+          "password": "han0419/"
+        }
+      }
+    }
+  },
+  "templates": {
+    "node_project": {
+      "environments": [
+        "local",
+        "production"
+      ],
+      "default_ports": {
+        "local": "auto",
+        "production": "auto"
+      },
+      "database_options": [
+        "local",
+        "cloud"
+      ],
+      "docker_compose_template": "docker-compose.{env}.yml"
+    }
+  }
+}

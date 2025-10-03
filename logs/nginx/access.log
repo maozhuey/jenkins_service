@@ -1,0 +1,4 @@
+192.168.65.1 - - [03/Oct/2025:11:16:06 +0000] "HEAD / HTTP/1.1" 301 0 "-" "curl/8.7.1" "-"
+192.168.65.1 - - [03/Oct/2025:12:14:26 +0000] "HEAD / HTTP/1.1" 301 0 "-" "curl/8.7.1" "-"
+192.168.65.1 - - [03/Oct/2025:12:14:57 +0000] "HEAD / HTTP/1.1" 301 0 "-" "curl/8.7.1" "-"
+192.168.65.1 - - [03/Oct/2025:12:15:02 +0000] "GET /?ide_webview_request_time=1759493702923 HTTP/1.1" 301 169 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Trae/1.100.3 Chrome/132.0.6834.210 Electron/34.5.1 Safari/537.36" "-"

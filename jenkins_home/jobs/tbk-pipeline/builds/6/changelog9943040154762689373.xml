@@ -1,0 +1,10 @@
+commit 6335a28b939fbb89c1ea0eb896b7d5dd67f32a6b
+tree a4fc204f13d1627900fbbe78f0ba630c99e47e69
+parent f8930d80dc4e16176a10ac5f33828935a9b93773
+author Jenkins CI <jenkins@example.com> 2025-10-03 06:20:57 +0000
+committer Jenkins CI <jenkins@example.com> 2025-10-03 06:20:57 +0000
+
+    Add Jenkinsfile.test for testing CI/CD pipeline
+
+
+:000000 100644 0000000000000000000000000000000000000000 aacab5f23d1fd7b72a84b6e89f9f75e59f7ba570 A	Jenkinsfile.test
