@@ -288,6 +288,16 @@ pipeline {
                 
                 script {
                     try {
+                        // 准备远端目录与同步必要文件（compose 与 env）
+                        sh """
+                            set -e
+                            echo "Ensuring remote deploy directory exists..."
+                            ssh -o StrictHostKeyChecking=no ${ECS_USER}@${ECS_HOST} 'mkdir -p ${ECS_DEPLOY_PATH}'
+                            echo "Syncing compose and env files to remote..."
+                            # 仅当本地存在对应文件时才上传
+                            [ -f ${COMPOSE_FILE_REMOTE} ] && scp -o StrictHostKeyChecking=no ${COMPOSE_FILE_REMOTE} ${ECS_USER}@${ECS_HOST}:${ECS_DEPLOY_PATH}/ || true
+                            [ -f ${ENV_FILE} ] && scp -o StrictHostKeyChecking=no ${ENV_FILE} ${ECS_USER}@${ECS_HOST}:${ECS_DEPLOY_PATH}/ || true
+                        """
                         // 通过 SSH 在远端 ECS 执行 docker compose 部署
                         sh """
                             set -e
