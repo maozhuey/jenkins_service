@@ -1,5 +1,5 @@
-# 使用官方 Node.js 18 Alpine 镜像作为基础镜像
-FROM node:18-alpine
+# 使用阿里云官方镜像源的 Node.js 18 Alpine 镜像作为基础镜像
+FROM registry.cn-hangzhou.aliyuncs.com/library/node:18-alpine
 
 # 设置工作目录
 WORKDIR /app

@@ -11,7 +11,7 @@ if [ -f ~/.docker/daemon.json ]; then
     cp ~/.docker/daemon.json ~/.docker/daemon.json.backup.$(date +%Y%m%d_%H%M%S)
 fi
 
-# 创建新的Docker配置，移除无效的镜像仓库
+# 创建新的Docker配置，移除无效的镜像仓库，使用稳定镜像源
 echo "📝 创建新的Docker配置..."
 cat > ~/.docker/daemon.json << 'EOF'
 {
@@ -19,8 +19,10 @@ cat > ~/.docker/daemon.json << 'EOF'
   "experimental": false,
   "insecure-registries": [],
   "registry-mirrors": [
-    "https://hub-mirror.c.163.com",
-    "https://mirror.baidubce.com"
+    "https://registry-1.docker.io",
+    "https://registry.cn-hangzhou.aliyuncs.com",
+    "https://mirror.ccs.tencentyun.com",
+    "https://docker.mirrors.ustc.edu.cn"
   ]
 }
 EOF
@@ -31,9 +33,9 @@ cat ~/.docker/daemon.json
 
 echo ""
 echo "🔄 重启Docker服务以应用新配置..."
-echo "请手动执行以下命令重启Docker："
-echo "  sudo systemctl restart docker  # Linux"
-echo "  或重启Docker Desktop应用      # macOS/Windows"
+echo "请手动执行以下操作重启Docker："
+echo "  - Linux: sudo systemctl restart docker"
+echo "  - macOS/Windows: 重启 Docker Desktop 应用"
 
 echo ""
 echo "⚠️  重启Docker后，请重启Jenkins容器："
