@@ -2,6 +2,11 @@ pipeline {
     agent any
     
     parameters {
+        stringParam(
+            name: 'PROJECT',
+            defaultValue: 'tbk',
+            description: '项目标识（对应 multi-project-config.json 中 projects 的键）'
+        )
         booleanParam(
             name: 'CONFIRM_PRODUCTION_DEPLOY',
             defaultValue: false,
@@ -41,11 +46,15 @@ pipeline {
         
         // Security Configuration
         PRODUCTION_SERVER = 'localhost'
-        HEALTH_CHECK_URL = 'http://localhost:3003/api/health'
+        HEALTH_CHECK_URL = "http://${ECS_HOST}/api/health"
         // Remote ECS deployment configuration
         ECS_HOST = "${env.ECS_HOST ?: '60.205.0.185'}"
         ECS_USER = "${env.ECS_USER ?: 'root'}"
         ECS_DEPLOY_PATH = "${env.ECS_DEPLOY_PATH ?: '/opt/apps/tbk'}"
+        // Env/Compose defaults (resolved per DEPLOY_ENV later)
+        ENV_FILE = '.env.production'
+        COMPOSE_FILE_LOCAL = 'docker-compose.production.yml'
+        COMPOSE_FILE_REMOTE = 'aliyun-ecs-deploy.yml'
     }
     
     stages {
@@ -93,6 +102,61 @@ pipeline {
                         echo "⚠️ WARNING: Non-main branch detected. Production deployment will be skipped for security."
                     }
                 }
+            }
+        }
+
+        stage('Resolve Config by DEPLOY_ENV and PROJECT') {
+            steps {
+                echo "🧭 Resolving env and compose files from configuration..."
+                script {
+                    def cfg = readJSON file: 'multi-project-config.json'
+                    def projectKey = params.PROJECT ?: env.APP_NAME ?: 'tbk'
+                    def prj = cfg.projects[projectKey]
+                    if (!prj) {
+                        error "未在 multi-project-config.json 找到项目 '${projectKey}'"
+                    }
+                    // 规范化环境名
+                    def envName = env.DEPLOY_ENV?.toLowerCase()
+                    if (envName == 'development' || envName == 'dev') envName = 'dev'
+                    if (envName == 'prod' || envName == 'production') envName = 'production'
+                    if (envName == 'loc' || envName == 'local') envName = 'local'
+                    if (envName == 'pub' || envName == 'public') envName = 'public'
+
+                    // 选择 .env 文件
+                    def envFileMap = [
+                        'production': '.env.production',
+                        'dev'       : '.env.dev',
+                        'local'     : '.env.dev',
+                        'public'    : '.env.public'
+                    ]
+                    env.ENV_FILE = envFileMap[envName] ?: ".env.${envName}"
+
+                    // 选择本地 compose 文件（用于本机或需要时）
+                    def composeTemplate = cfg.templates?.node_project?.docker_compose_template ?: 'docker-compose.{env}.yml'
+                    def envKeyForCompose = (envName == 'dev') ? 'dev' : envName
+                    env.COMPOSE_FILE_LOCAL = composeTemplate.replace('{env}', envKeyForCompose)
+
+                    // 选择远端 compose 文件（默认使用 aliyun-ecs-deploy.yml）
+                    env.COMPOSE_FILE_REMOTE = 'aliyun-ecs-deploy.yml'
+
+                    // 从项目环境中可选覆盖远端部署路径
+                    def envBlock = prj.environments[envName]
+                    if (envBlock && envBlock.containsKey('deploy_path')) {
+                        env.ECS_DEPLOY_PATH = envBlock.deploy_path
+                    }
+
+                    // 更新健康检查为远端地址
+                    env.HEALTH_CHECK_URL = "http://${env.ECS_HOST}/api/health"
+
+                    echo "📦 PROJECT: ${projectKey}"
+                    echo "🌐 DEPLOY_ENV: ${envName}"
+                    echo "📄 ENV_FILE: ${env.ENV_FILE}"
+                    echo "🗂️ LOCAL COMPOSE: ${env.COMPOSE_FILE_LOCAL}"
+                    echo "🗂️ REMOTE COMPOSE: ${env.COMPOSE_FILE_REMOTE}"
+                    echo "📍 ECS_DEPLOY_PATH: ${env.ECS_DEPLOY_PATH}"
+                    echo "❤️ HEALTH_CHECK_URL: ${env.HEALTH_CHECK_URL}"
+                }
+                echo "✅ Configuration resolved"
             }
         }
         
@@ -232,9 +296,11 @@ pipeline {
                               set -e
                               cd ${ECS_DEPLOY_PATH}
                               echo "Pulling latest image..."
-                              docker compose -f aliyun-ecs-deploy.yml pull tbk-production
+                              ENV_ARG=""
+                              if [ -f ${ENV_FILE} ]; then ENV_ARG="--env-file ${ENV_FILE}"; fi
+                              docker compose ${ENV_ARG} -f ${COMPOSE_FILE_REMOTE} pull tbk-production
                               echo "Starting services..."
-                              docker compose -f aliyun-ecs-deploy.yml up -d tbk-production nginx-production
+                              docker compose ${ENV_ARG} -f ${COMPOSE_FILE_REMOTE} up -d tbk-production nginx-production
                               echo "Checking service health..."
                               curl -fsSL http://localhost:80/api/health || true
                             '
