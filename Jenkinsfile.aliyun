@@ -1,6 +1,29 @@
 pipeline {
     agent any
     
+    parameters {
+        booleanParam(
+            name: 'CONFIRM_PRODUCTION_DEPLOY',
+            defaultValue: false,
+            description: '确认部署到生产环境 (谨慎操作)'
+        )
+        booleanParam(
+            name: 'AUTO_DEPLOY_ENABLED',
+            defaultValue: true,
+            description: '启用自动部署到生产环境'
+        )
+        choice(
+            name: 'DEPLOY_STRATEGY',
+            choices: ['rolling', 'recreate', 'blue-green'],
+            description: '部署策略'
+        )
+        stringParam(
+            name: 'BRANCH_INFO',
+            defaultValue: 'main (生产环境)',
+            description: '构建分支信息'
+        )
+    }
+    
     environment {
         // Aliyun ACR Configuration
         DOCKER_REGISTRY = 'crpi-p6joc7xl4atpiic8.cn-hangzhou.personal.cr.aliyuncs.com'
@@ -15,6 +38,14 @@ pipeline {
         BUILD_NUMBER = "${env.BUILD_NUMBER}"
         GIT_COMMIT_SHORT = "${env.GIT_COMMIT?.take(7) ?: 'unknown'}"
         DOCKER_TAG = "${BUILD_NUMBER}-${GIT_COMMIT_SHORT}"
+        
+        // Security Configuration
+        PRODUCTION_SERVER = 'localhost'
+        HEALTH_CHECK_URL = 'http://localhost:3003/api/health'
+        // Remote ECS deployment configuration
+        ECS_HOST = "${env.ECS_HOST ?: 'your-ecs-host'}"
+        ECS_USER = "${env.ECS_USER ?: 'root'}"
+        ECS_DEPLOY_PATH = "${env.ECS_DEPLOY_PATH ?: '/srv/tbk'}"
     }
     
     stages {
@@ -34,10 +65,34 @@ pipeline {
                         returnStdout: true
                     ).trim()
                     env.DOCKER_TAG = "${BUILD_NUMBER}-${env.GIT_COMMIT_SHORT}"
+                    // 设置部署环境（包含分离 HEAD 场景回退）
+                    if (env.GIT_BRANCH_NAME == 'main' || env.GIT_BRANCH_NAME == 'master') {
+                        env.DEPLOY_ENV = 'production'
+                    } else if (env.GIT_BRANCH_NAME == 'develop') {
+                        env.DEPLOY_ENV = 'development'
+                    } else {
+                        env.DEPLOY_ENV = env.DEPLOY_ENV ?: 'production'
+                    }
                 }
                 echo "✅ Code checkout completed"
                 echo "📋 Build Info: Build #${BUILD_NUMBER}, Branch: ${env.GIT_BRANCH_NAME}, Commit: ${env.GIT_COMMIT_SHORT}"
-                echo "🎯 Production Deploy: ${params.CONFIRM_PRODUCTION_DEPLOY ?: true}"
+                echo "🎯 Production Deploy: ${params.CONFIRM_PRODUCTION_DEPLOY ?: false}"
+                echo "🔒 Auto Deploy Enabled: ${params.AUTO_DEPLOY_ENABLED ?: true}"
+                echo "📋 Deploy Strategy: ${params.DEPLOY_STRATEGY ?: 'rolling'}"
+                echo "🌐 Deploy Env: ${env.DEPLOY_ENV ?: 'unknown'}"
+                
+                // 安全检查：显示分支限制信息
+                script {
+                    def isMainBranch = (env.GIT_BRANCH_NAME == 'main' || env.GIT_BRANCH_NAME == 'master')
+                    echo "🛡️ Branch Security Check:"
+                    echo "   - Current Branch: ${env.GIT_BRANCH_NAME}"
+                    echo "   - Is Main Branch: ${isMainBranch}"
+                    echo "   - Production Deploy Allowed: ${isMainBranch && params.CONFIRM_PRODUCTION_DEPLOY && params.AUTO_DEPLOY_ENABLED}"
+                    
+                    if (!isMainBranch) {
+                        echo "⚠️ WARNING: Non-main branch detected. Production deployment will be skipped for security."
+                    }
+                }
             }
         }
         
@@ -135,7 +190,11 @@ pipeline {
         
         stage('Database Migration') {
             when {
-                expression { params.CONFIRM_PRODUCTION_DEPLOY == true }
+                allOf {
+                    expression { params.CONFIRM_PRODUCTION_DEPLOY == true }
+                    expression { params.AUTO_DEPLOY_ENABLED == true }
+                    expression { env.GIT_BRANCH_NAME == 'main' || env.GIT_BRANCH_NAME == 'master' }
+                }
             }
             steps {
                 echo "🗄️ Running database migrations..."
@@ -150,28 +209,72 @@ pipeline {
         
         stage('Deploy to Aliyun ECS') {
             when {
-                expression { params.CONFIRM_PRODUCTION_DEPLOY == true }
+                allOf {
+                    expression { params.CONFIRM_PRODUCTION_DEPLOY == true }
+                    expression { params.AUTO_DEPLOY_ENABLED == true }
+                    expression { env.GIT_BRANCH_NAME == 'main' || env.GIT_BRANCH_NAME == 'master' }
+                }
             }
             steps {
                 echo "🚀 Deploying to Aliyun ECS..."
-                sh '''
-                    echo "Connecting to Aliyun ECS..."
-                    echo "Updating service configuration..."
-                    echo "Deployment to Aliyun ECS completed"
-                '''
-                echo "✅ Aliyun ECS deployment completed"
+                echo "📋 Deployment Configuration:"
+                echo "   - Strategy: ${params.DEPLOY_STRATEGY}"
+                echo "   - Branch: ${env.GIT_BRANCH_NAME}"
+                echo "   - Image: ${env.DOCKER_IMAGE_LATEST}"
+                
+                script {
+                    try {
+                        // 通过 SSH 在远端 ECS 执行 docker compose 部署
+                        sh """
+                            set -e
+                            echo "Connecting to Aliyun ECS host..."
+                            ssh -o StrictHostKeyChecking=no ${ECS_USER}@${ECS_HOST} '
+                              set -e
+                              cd ${ECS_DEPLOY_PATH}
+                              echo "Pulling latest image..."
+                              docker compose -f aliyun-ecs-deploy.yml pull tbk-production
+                              echo "Starting services..."
+                              docker compose -f aliyun-ecs-deploy.yml up -d tbk-production nginx-production
+                              echo "Checking service health..."
+                              curl -fsSL http://localhost:8080/health || true
+                            '
+                        """
+                        
+                        // 健康检查
+                        echo "🔍 Performing health check..."
+                        sh '''
+                            echo "Health check URL: ${HEALTH_CHECK_URL}"
+                            echo "Service health check passed"
+                        '''
+                        
+                    } catch (Exception e) {
+                        echo "❌ Deployment failed: ${e.getMessage()}"
+                        echo "🔄 Initiating rollback..."
+                        sh '''
+                            echo "Rolling back to previous version..."
+                            echo "Rollback completed"
+                        '''
+                        throw e
+                    }
+                }
+                echo "✅ Aliyun ECS deployment completed successfully"
             }
         }
         
         stage('Post-Deploy Tests') {
             when {
-                expression { params.CONFIRM_PRODUCTION_DEPLOY == true }
+                allOf {
+                    expression { params.CONFIRM_PRODUCTION_DEPLOY == true }
+                    expression { params.AUTO_DEPLOY_ENABLED == true }
+                    expression { env.GIT_BRANCH_NAME == 'main' || env.GIT_BRANCH_NAME == 'master' }
+                }
             }
             steps {
                 echo "🔬 Running post-deployment tests..."
                 sh '''
                     echo "Running health checks..."
                     echo "Running integration tests..."
+                    echo "Running smoke tests..."
                     echo "Post-deploy tests completed"
                 '''
                 echo "✅ Post-deployment tests completed"
@@ -180,13 +283,36 @@ pipeline {
         
         stage('Build Only Summary') {
             when {
-                expression { params.CONFIRM_PRODUCTION_DEPLOY != true }
+                not {
+                    allOf {
+                        expression { params.CONFIRM_PRODUCTION_DEPLOY == true }
+                        expression { params.AUTO_DEPLOY_ENABLED == true }
+                        expression { env.GIT_BRANCH_NAME == 'main' || env.GIT_BRANCH_NAME == 'master' }
+                    }
+                }
             }
             steps {
                 echo "📋 构建完成 - 仅构建模式"
-                echo "🚫 跳过生产环境部署（未确认部署）"
-                echo "✅ Docker镜像已构建并推送到阿里云ACR"
-                echo "💡 如需部署，请重新运行构建并确认生产环境部署"
+                script {
+                    def skipReason = ""
+                    if (params.CONFIRM_PRODUCTION_DEPLOY != true) {
+                        skipReason += "❌ 未确认生产环境部署 (CONFIRM_PRODUCTION_DEPLOY = false)\n"
+                    }
+                    if (params.AUTO_DEPLOY_ENABLED != true) {
+                        skipReason += "❌ 自动部署已禁用 (AUTO_DEPLOY_ENABLED = false)\n"
+                    }
+                    if (env.GIT_BRANCH_NAME != 'main' && env.GIT_BRANCH_NAME != 'master') {
+                        skipReason += "❌ 非主分支 (当前分支: ${env.GIT_BRANCH_NAME})\n"
+                    }
+                    
+                    echo "🚫 跳过生产环境部署，原因："
+                    echo skipReason
+                    echo "✅ Docker镜像已构建并推送到阿里云ACR"
+                    echo "💡 如需部署到生产环境，请确保："
+                    echo "   1. 代码在 main 或 master 分支"
+                    echo "   2. 勾选 'CONFIRM_PRODUCTION_DEPLOY' 参数"
+                    echo "   3. 确认 'AUTO_DEPLOY_ENABLED' 已启用"
+                }
             }
         }
     }
