@@ -27,4 +27,11 @@ logs/
 jenkins_home/secrets/
 jenkins_home/identity.key.enc
 jenkins_home/secret.key
-credentials.xml
+jenkins_home/credentials.xml*
+jenkins_home/credentials.xml.backup*
+jenkins_home/credentials.xml.rollback*
+scripts/setup-dockerhub-credentials.sh
+
+# 备份文件
+*.backup
+*.rollback-backup*
