@@ -217,17 +217,10 @@ pipeline {
                     def imageName = "${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${APP_NAME}"
                     def imageTag = "${DOCKER_TAG}"
                     def latestTag = "latest"
-                    
-                    echo "Building image: ${imageName}:${imageTag}"
-                    
-                    sh """
-                        docker build -t ${imageName}:${imageTag} .
-                        docker tag ${imageName}:${imageTag} ${imageName}:${latestTag}
-                        echo "Docker image built successfully"
-                    """
-                    
+                    echo "Preparing multi-arch build: ${imageName}:${imageTag} (+ ${latestTag})"
                     env.DOCKER_IMAGE = "${imageName}:${imageTag}"
                     env.DOCKER_IMAGE_LATEST = "${imageName}:${latestTag}"
+                    echo "Image will be built and pushed in next stage using buildx"
                 }
                 echo "✅ Docker image build completed"
             }
@@ -237,11 +230,21 @@ pipeline {
             steps {
                 echo "📤 Pushing Docker image to Aliyun ACR..."
                 script {
+                    def imageName = "${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${APP_NAME}"
+                    def imageTag = "${DOCKER_TAG}"
+                    def latestTag = "latest"
                     docker.withRegistry("https://${DOCKER_REGISTRY}", DOCKER_CREDENTIALS) {
                         sh """
-                            docker push ${env.DOCKER_IMAGE}
-                            docker push ${env.DOCKER_IMAGE_LATEST}
-                            echo "Docker images pushed successfully"
+                            set -e
+                            docker buildx create --use --name tbk-builder || docker buildx use tbk-builder
+                            docker buildx inspect --bootstrap || true
+                            echo "Building and pushing multi-arch image (amd64, arm64)..."
+                            docker buildx build \
+                              --platform linux/amd64,linux/arm64 \
+                              -t ${imageName}:${imageTag} \
+                              -t ${imageName}:${latestTag} \
+                              --push .
+                            echo "Docker images pushed successfully (multi-arch)"
                         """
                     }
                 }
