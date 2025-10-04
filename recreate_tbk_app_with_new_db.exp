@@ -1,0 +1,94 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+
+spawn ssh root@60.205.0.185
+expect "password:"
+send "han0419/\r"
+expect "# "
+
+send "export PAGER=cat\r"
+expect "# "
+
+# 删除旧的tbk-app容器
+send "echo '=== 删除旧的tbk-app容器 ==='\r"
+expect "# "
+send "docker rm tbk-app\r"
+expect "# "
+
+# 重新创建tbk-app容器，使用新的数据库连接参数
+send "echo '=== 重新创建tbk-app容器 ==='\r"
+expect "# "
+send "docker run -d \\\r"
+expect "# "
+send "  --name tbk-app \\\r"
+expect "# "
+send "  --network tbk_tbk-network \\\r"
+expect "# "
+send "  -p 8081:8080 \\\r"
+expect "# "
+send "  -e DB_HOST=docker-mysql \\\r"
+expect "# "
+send "  -e DB_PORT=3306 \\\r"
+expect "# "
+send "  -e DB_USER=peach_wiki \\\r"
+expect "# "
+send "  -e DB_PASSWORD=han0419/ \\\r"
+expect "# "
+send "  -e DB_NAME=peach_wiki \\\r"
+expect "# "
+send "  -e SERVER_PORT=8080 \\\r"
+expect "# "
+send "  -e NODE_ENV=production \\\r"
+expect "# "
+send "  -e CORS_ORIGIN=* \\\r"
+expect "# "
+send "  --health-cmd='curl -f http://localhost:8080/health || exit 1' \\\r"
+expect "# "
+send "  --health-interval=30s \\\r"
+expect "# "
+send "  --health-timeout=10s \\\r"
+expect "# "
+send "  --health-start-period=40s \\\r"
+expect "# "
+send "  --health-retries=3 \\\r"
+expect "# "
+send "  tbk-tbk-app\r"
+expect "# "
+
+# 等待容器启动
+send "sleep 10\r"
+expect "# "
+
+# 检查新容器状态
+send "echo '=== 检查新tbk-app容器状态 ==='\r"
+expect "# "
+send "docker ps | grep tbk-app\r"
+expect "# "
+
+# 检查新容器的环境变量
+send "echo '=== 检查新容器的环境变量 ==='\r"
+expect "# "
+send "docker exec tbk-app env | grep DB\r"
+expect "# "
+
+# 测试新容器的数据库连接
+send "echo '=== 测试新容器的数据库连接 ==='\r"
+expect "# "
+send "docker exec tbk-app ping -c 2 docker-mysql\r"
+expect "# "
+
+# 测试新容器的健康检查
+send "echo '=== 测试新容器的健康检查 ==='\r"
+expect "# "
+send "curl -s http://localhost:8081/health\r"
+expect "# "
+
+# 测试nginx代理到新容器
+send "echo '=== 测试nginx代理到新容器 ==='\r"
+expect "# "
+send "curl -s http://localhost:80/api/health\r"
+expect "# "
+
+send "exit\r"
+expect eof

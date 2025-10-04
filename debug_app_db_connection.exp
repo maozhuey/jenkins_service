@@ -1,0 +1,56 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+
+spawn ssh root@60.205.0.185
+expect "password:"
+send "han0419/\r"
+expect "# "
+
+send "export PAGER=cat\r"
+expect "# "
+
+# 检查tbk-app容器的日志
+send "echo '=== 检查tbk-app容器的日志 ==='\r"
+expect "# "
+send "docker logs --tail 20 tbk-app\r"
+expect "# "
+
+# 检查tbk-app容器内的应用文件
+send "echo '=== 检查tbk-app容器内的应用文件 ==='\r"
+expect "# "
+send "docker exec tbk-app ls -la /app/\r"
+expect "# "
+
+# 检查应用的数据库配置文件
+send "echo '=== 检查应用的数据库配置 ==='\r"
+expect "# "
+send "docker exec tbk-app cat /app/app.js | head -50\r"
+expect "# "
+
+# 检查环境变量配置文件
+send "echo '=== 检查环境变量配置文件 ==='\r"
+expect "# "
+send "docker exec tbk-app find /app -name '*.env*' -o -name '*config*' | head -10\r"
+expect "# "
+
+# 尝试在容器内直接测试数据库连接
+send "echo '=== 在容器内测试数据库连接 ==='\r"
+expect "# "
+send "docker exec tbk-app sh -c 'echo \"Testing DB connection with env vars: DB_HOST=\\$DB_HOST, DB_USER=\\$DB_USER, DB_NAME=\\$DB_NAME\"'\r"
+expect "# "
+
+# 检查应用是否有其他数据库配置
+send "echo '=== 搜索应用中的数据库配置 ==='\r"
+expect "# "
+send "docker exec tbk-app grep -r 'root\\|mysql\\|database' /app/ | head -10\r"
+expect "# "
+
+# 检查package.json和其他配置文件
+send "echo '=== 检查package.json ==='\r"
+expect "# "
+send "docker exec tbk-app cat /app/package.json\r"
+expect "# "
+
+send "exit\r"
+expect eof

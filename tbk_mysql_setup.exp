@@ -1,0 +1,127 @@
+#!/usr/bin/expect -f
+
+# tbk项目独立MySQL容器设置脚本
+# 功能：启动独立的MySQL容器，创建数据库和用户，测试连接
+
+set timeout 60
+set server_ip "60.205.0.185"
+set server_user "root"
+set server_password "han0419/"
+
+# 连接到远程服务器
+spawn sshpass -p $server_password ssh -o StrictHostKeyChecking=no $server_user@$server_ip
+
+expect {
+    "*]#" {
+        send_user "\n=== 已连接到远程服务器 ===\n"
+    }
+    timeout {
+        send_user "\n连接服务器超时\n"
+        exit 1
+    }
+}
+
+# 进入tbk项目目录
+send "cd /root/tbk\r"
+expect "*]#"
+
+# 停止现有的tbk容器（如果存在）
+send "docker-compose down\r"
+expect "*]#"
+
+# 清理可能存在的同名容器
+send "docker rm -f tbk-mysql 2>/dev/null || true\r"
+expect "*]#"
+
+# 启动tbk项目的独立MySQL容器
+send_user "\n=== 启动tbk项目的独立MySQL容器 ===\n"
+send "docker-compose up -d tbk-db\r"
+expect {
+    "*]#" {
+        send_user "\n容器启动命令已执行\n"
+    }
+    timeout {
+        send_user "\n容器启动超时\n"
+        exit 1
+    }
+}
+
+# 等待MySQL容器完全启动
+send_user "\n=== 等待MySQL容器启动完成 ===\n"
+send "sleep 30\r"
+expect "*]#"
+
+# 检查容器状态
+send "docker ps | grep tbk-mysql\r"
+expect "*]#"
+
+# 检查端口监听
+send "netstat -tlnp | grep 3307\r"
+expect "*]#"
+
+# 测试MySQL连接
+send_user "\n=== 测试MySQL连接 ===\n"
+send "docker exec -it tbk-mysql mysql -u root -pHan0419@MySQL -e \"SHOW DATABASES;\"\r"
+expect {
+    "*tbk*" {
+        send_user "\n✓ MySQL连接成功，tbk数据库已创建\n"
+    }
+    "*ERROR*" {
+        send_user "\n✗ MySQL连接失败\n"
+    }
+    timeout {
+        send_user "\n✗ MySQL连接超时\n"
+    }
+}
+expect "*]#"
+
+# 测试tbk_admin用户连接
+send_user "\n=== 测试tbk_admin用户连接 ===\n"
+send "docker exec -it tbk-mysql mysql -u tbk_admin -pHan0419@MySQL -D tbk -e \"SHOW TABLES;\"\r"
+expect {
+    "*]#" {
+        send_user "\n✓ tbk_admin用户连接成功\n"
+    }
+    "*ERROR*" {
+        send_user "\n✗ tbk_admin用户连接失败\n"
+    }
+    timeout {
+        send_user "\n✗ tbk_admin用户连接超时\n"
+    }
+}
+
+# 测试外部连接（从宿主机连接容器）
+send_user "\n=== 测试外部连接（端口3307） ===\n"
+send "mysql -h 127.0.0.1 -P 3307 -u root -pHan0419@MySQL -e \"SELECT 'External connection successful' as status;\"\r"
+expect {
+    "*External connection successful*" {
+        send_user "\n✓ 外部连接测试成功\n"
+    }
+    "*ERROR*" {
+        send_user "\n✗ 外部连接测试失败\n"
+    }
+    timeout {
+        send_user "\n✗ 外部连接测试超时\n"
+    }
+}
+expect "*]#"
+
+# 显示最终状态
+send_user "\n=== 最终状态检查 ===\n"
+send "docker ps | grep tbk\r"
+expect "*]#"
+
+send "netstat -tlnp | grep 3307\r"
+expect "*]#"
+
+send_user "\n=== tbk项目独立MySQL容器设置完成 ===\n"
+send_user "容器名称: tbk-mysql\n"
+send_user "端口映射: 3307:3306\n"
+send_user "数据库: tbk\n"
+send_user "用户: root / tbk_admin\n"
+send_user "密码: Han0419@MySQL\n"
+send_user "外部连接: 60.205.0.185:3307\n"
+
+# 退出SSH连接
+send "exit\r"
+expect eof

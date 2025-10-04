@@ -1,0 +1,90 @@
+#!/usr/bin/expect -f
+
+# 诊断和修复tbk容器启动问题
+
+set timeout 30
+set server_ip "60.205.0.185"
+set server_user "root"
+set server_password "han0419/"
+
+# 连接到远程服务器
+spawn sshpass -p $server_password ssh -o StrictHostKeyChecking=no $server_user@$server_ip
+
+expect {
+    "*]#" {
+        send_user "\n=== 已连接到远程服务器 ===\n"
+    }
+    timeout {
+        send_user "\n连接服务器超时\n"
+        exit 1
+    }
+}
+
+# 进入tbk目录
+send "cd /root/tbk\r"
+expect "*]#"
+
+# 检查当前容器状态
+send_user "\n=== 检查所有容器状态 ===\n"
+send "docker ps -a | grep tbk\r"
+expect "*]#"
+
+# 检查Docker网络
+send_user "\n=== 检查Docker网络 ===\n"
+send "docker network ls | grep tbk\r"
+expect "*]#"
+
+# 清理停止的容器
+send_user "\n=== 清理停止的容器 ===\n"
+send "docker container prune -f\r"
+expect "*]#"
+
+# 完全停止所有tbk相关服务
+send_user "\n=== 完全停止tbk服务 ===\n"
+send "docker compose down\r"
+expect "*]#"
+
+# 删除旧的网络（如果存在）
+send_user "\n=== 删除旧网络 ===\n"
+send "docker network rm tbk_default 2>/dev/null || echo '网络不存在或已删除'\r"
+expect "*]#"
+
+# 检查端口占用
+send_user "\n=== 检查端口3306占用情况 ===\n"
+send "netstat -tlnp | grep 3306\r"
+expect "*]#"
+
+# 重新启动tbk-db服务
+send_user "\n=== 重新启动tbk-db服务 ===\n"
+send "docker compose up -d tbk-db\r"
+expect "*]#"
+
+# 等待容器启动
+send "sleep 15\r"
+expect "*]#"
+
+# 检查容器状态
+send_user "\n=== 检查容器启动状态 ===\n"
+send "docker ps | grep tbk\r"
+expect "*]#"
+
+# 检查容器日志
+send_user "\n=== 检查容器日志 ===\n"
+send "docker logs tbk-mysql --tail 20\r"
+expect "*]#"
+
+# 检查端口监听
+send_user "\n=== 检查端口监听 ===\n"
+send "netstat -tlnp | grep 3306\r"
+expect "*]#"
+
+# 如果容器正常运行，测试连接
+send_user "\n=== 测试MySQL连接 ===\n"
+send "docker exec tbk-mysql mysql -u root -pHan0419@MySQL -e \"SELECT 'Connection successful' as status;\" 2>/dev/null || echo '连接失败，容器可能还在启动中'\r"
+expect "*]#"
+
+send_user "\n=== 诊断完成 ===\n"
+
+# 退出
+send "exit\r"
+expect eof

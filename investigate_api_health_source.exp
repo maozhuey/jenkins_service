@@ -1,0 +1,62 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+
+spawn ssh root@60.205.0.185
+expect "password:"
+send "han0419/\r"
+expect "# "
+
+send "export PAGER=cat\r"
+expect "# "
+
+# 使用curl -v查看详细的请求响应过程
+send "echo '=== 使用curl -v查看/api/health的详细请求过程 ==='\r"
+expect "# "
+send "curl -v http://localhost:80/api/health 2>&1\r"
+expect "# "
+
+# 检查是否有其他容器在处理健康检查
+send "echo '=== 检查所有运行的容器 ==='\r"
+expect "# "
+send "docker ps --format 'table {{.Names}}\\t{{.Image}}\\t{{.Ports}}\\t{{.Status}}'\r"
+expect "# "
+
+# 检查nginx的upstream配置
+send "echo '=== 检查nginx的upstream配置 ==='\r"
+expect "# "
+send "docker exec nginx-production grep -r 'upstream\\|server' /etc/nginx/\r"
+expect "# "
+
+# 检查是否有其他健康检查服务
+send "echo '=== 检查是否有其他健康检查服务 ==='\r"
+expect "# "
+send "netstat -tlnp | grep :80\r"
+expect "# "
+
+# 直接在nginx容器内测试代理目标
+send "echo '=== 在nginx容器内测试代理目标 ==='\r"
+expect "# "
+send "docker exec nginx-production wget -qO- http://tbk-app:8080/health\r"
+expect "# "
+
+# 检查nginx的access日志
+send "echo '=== 检查nginx的access日志 ==='\r"
+expect "# "
+send "docker exec nginx-production tail -10 /var/log/nginx/access.log\r"
+expect "# "
+
+# 测试直接访问tbk-app的不同端点
+send "echo '=== 测试tbk-app的所有端点 ==='\r"
+expect "# "
+send "curl -s http://localhost:8081/\r"
+expect "# "
+send "curl -s http://localhost:8081/health\r"
+expect "# "
+send "curl -s http://localhost:8081/db-test\r"
+expect "# "
+send "curl -s http://localhost:8081/categories\r"
+expect "# "
+
+send "exit\r"
+expect eof

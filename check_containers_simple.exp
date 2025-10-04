@@ -1,0 +1,32 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+
+spawn ssh root@60.205.0.185
+expect "password:"
+send "han0419/\r"
+expect "# "
+
+send "export PAGER=cat\r"
+expect "# "
+
+# 检查运行中的容器
+send "echo '=== 运行中的容器 ==='\r"
+expect "# "
+send "docker ps --format 'table {{.Names}}\\t{{.Image}}\\t{{.Status}}\\t{{.Ports}}'\r"
+expect "# "
+
+# 检查所有容器
+send "echo '=== 所有容器 ==='\r"
+expect "# "
+send "docker ps -a --format 'table {{.Names}}\\t{{.Image}}\\t{{.Status}}'\r"
+expect "# "
+
+# 检查端口占用
+send "echo '=== 关键端口占用 ==='\r"
+expect "# "
+send "netstat -tlnp | grep -E ':(80|443|3000|3306|3307|6379)' | head -10\r"
+expect "# "
+
+send "exit\r"
+expect eof

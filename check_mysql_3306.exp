@@ -1,0 +1,62 @@
+#!/usr/bin/expect -f
+
+# 检查端口3306上的MySQL服务
+
+set timeout 30
+set server_ip "60.205.0.185"
+set server_user "root"
+set server_password "han0419/"
+
+# 连接到远程服务器
+spawn sshpass -p $server_password ssh -o StrictHostKeyChecking=no $server_user@$server_ip
+
+expect {
+    "*]#" {
+        send_user "\n=== 已连接到远程服务器 ===\n"
+    }
+    timeout {
+        send_user "\n连接服务器超时\n"
+        exit 1
+    }
+}
+
+# 检查端口3306的进程
+send_user "\n=== 检查端口3306的进程 ===\n"
+send "netstat -tlnp | grep 3306\r"
+expect "*]#"
+
+# 检查MySQL相关的Docker容器
+send_user "\n=== 检查MySQL相关的Docker容器 ===\n"
+send "docker ps | grep mysql\r"
+expect "*]#"
+
+# 检查所有运行的容器
+send_user "\n=== 检查所有运行的容器 ===\n"
+send "docker ps\r"
+expect "*]#"
+
+# 检查系统MySQL服务状态
+send_user "\n=== 检查系统MySQL服务状态 ===\n"
+send "systemctl status mysql 2>/dev/null || systemctl status mysqld 2>/dev/null || echo '系统MySQL服务未找到'\r"
+expect "*]#"
+
+# 检查MySQL进程
+send_user "\n=== 检查MySQL进程 ===\n"
+send "ps aux | grep mysql | grep -v grep\r"
+expect "*]#"
+
+# 测试连接到3306端口的MySQL
+send_user "\n=== 测试连接到3306端口的MySQL ===\n"
+send "mysql -h 127.0.0.1 -P 3306 -u root -pHan0419@MySQL -e \"SELECT VERSION(), @@hostname;\"\r"
+expect "*]#"
+
+# 检查MySQL数据目录
+send_user "\n=== 检查MySQL数据目录 ===\n"
+send "mysql -h 127.0.0.1 -P 3306 -u root -pHan0419@MySQL -e \"SHOW VARIABLES LIKE 'datadir';\"\r"
+expect "*]#"
+
+send_user "\n=== 检查完成 ===\n"
+
+# 退出
+send "exit\r"
+expect eof

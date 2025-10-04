@@ -1,0 +1,50 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+
+spawn ssh root@60.205.0.185
+expect "password:"
+send "han0419/\r"
+expect "# "
+
+send "export PAGER=cat\r"
+expect "# "
+
+# 检查Docker网络
+send "echo '=== 检查Docker网络 ==='\r"
+expect "# "
+send "docker network ls\r"
+expect "# "
+
+# 检查默认网络中的容器
+send "echo '=== 检查默认网络中的容器 ==='\r"
+expect "# "
+send "docker network inspect bridge | grep -A 5 -B 5 'Name.*tbk\\|Name.*nginx\\|Name.*mysql'\r"
+expect "# "
+
+# 检查nginx-production容器能否连接到tbk-app
+send "echo '=== 测试nginx-production到tbk-app的连接 ==='\r"
+expect "# "
+send "docker exec nginx-production ping -c 2 tbk-app || echo 'Cannot ping tbk-app'\r"
+expect "# "
+
+# 检查nginx-production容器能否连接到tbk-production
+send "echo '=== 测试nginx-production到tbk-production的连接 ==='\r"
+expect "# "
+send "docker exec nginx-production ping -c 2 tbk-production || echo 'Cannot ping tbk-production'\r"
+expect "# "
+
+# 检查tbk-app容器能否连接到tbk-mysql
+send "echo '=== 测试tbk-app到tbk-mysql的连接 ==='\r"
+expect "# "
+send "docker exec tbk-app ping -c 2 tbk-mysql || echo 'Cannot ping tbk-mysql'\r"
+expect "# "
+
+# 检查tbk-app容器能否连接到tbk-db
+send "echo '=== 测试tbk-app到tbk-db的连接 ==='\r"
+expect "# "
+send "docker exec tbk-app ping -c 2 tbk-db || echo 'Cannot ping tbk-db'\r"
+expect "# "
+
+send "exit\r"
+expect eof

@@ -1,0 +1,44 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+
+spawn ssh root@60.205.0.185
+expect "password:"
+send "han0419/\r"
+expect "# "
+
+send "export PAGER=cat\r"
+expect "# "
+
+# 检查tbk-mysql容器的详细信息
+send "echo '=== tbk-mysql容器详细信息 ==='\r"
+expect "# "
+send "docker inspect tbk-mysql | grep -A 20 -B 5 -i env\r"
+expect "# "
+
+# 检查容器的启动命令
+send "echo '=== tbk-mysql容器启动信息 ==='\r"
+expect "# "
+send "docker inspect tbk-mysql | grep -A 10 -B 5 -i cmd\r"
+expect "# "
+
+# 检查容器日志
+send "echo '=== tbk-mysql容器日志 ==='\r"
+expect "# "
+send "docker logs tbk-mysql | tail -20\r"
+expect "# "
+
+# 尝试进入容器查看MySQL状态
+send "echo '=== 进入容器查看MySQL状态 ==='\r"
+expect "# "
+send "docker exec -it tbk-mysql mysql --version\r"
+expect "# "
+
+# 尝试不同的密码组合
+send "echo '=== 尝试无密码连接 ==='\r"
+expect "# "
+send "docker exec tbk-mysql mysql -u root -e 'SELECT 1;'\r"
+expect "# "
+
+send "exit\r"
+expect eof

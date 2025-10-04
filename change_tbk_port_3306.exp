@@ -1,0 +1,90 @@
+#!/usr/bin/expect -f
+
+# 修改tbk-mysql容器端口到3306
+
+set timeout 30
+set server_ip "60.205.0.185"
+set server_user "root"
+set server_password "han0419/"
+
+# 连接到远程服务器
+spawn sshpass -p $server_password ssh -o StrictHostKeyChecking=no $server_user@$server_ip
+
+expect {
+    "*]#" {
+        send_user "\n=== 已连接到远程服务器 ===\n"
+    }
+    timeout {
+        send_user "\n连接服务器超时\n"
+        exit 1
+    }
+}
+
+# 进入tbk目录
+send "cd /root/tbk\r"
+expect "*]#"
+
+# 检查当前容器状态
+send_user "\n=== 检查当前tbk-mysql容器状态 ===\n"
+send "docker ps | grep tbk-mysql\r"
+expect "*]#"
+
+send "netstat -tlnp | grep 3307\r"
+expect "*]#"
+
+# 停止tbk-mysql容器
+send_user "\n=== 停止tbk-mysql容器 ===\n"
+send "docker compose down tbk-db\r"
+expect "*]#"
+
+# 等待容器完全停止
+send "sleep 3\r"
+expect "*]#"
+
+# 修改docker-compose.yml文件中的端口配置
+send_user "\n=== 修改端口配置 ===\n"
+send "sed -i 's/3307:3306/3306:3306/g' docker-compose.yml\r"
+expect "*]#"
+
+# 验证修改结果
+send_user "\n=== 验证端口配置修改 ===\n"
+send "grep -n '3306:3306' docker-compose.yml\r"
+expect "*]#"
+
+# 重新启动tbk-mysql容器
+send_user "\n=== 重新启动tbk-mysql容器 ===\n"
+send "docker compose up -d tbk-db\r"
+expect "*]#"
+
+# 等待容器启动
+send "sleep 10\r"
+expect "*]#"
+
+# 检查容器状态
+send_user "\n=== 检查容器启动状态 ===\n"
+send "docker ps | grep tbk-mysql\r"
+expect "*]#"
+
+send "netstat -tlnp | grep 3306\r"
+expect "*]#"
+
+# 测试MySQL连接
+send_user "\n=== 测试MySQL连接 ===\n"
+send "docker exec tbk-mysql mysql -u root -pHan0419@MySQL -e \"SELECT 'tbk-mysql on port 3306' as status;\"\r"
+expect "*]#"
+
+send "docker exec tbk-mysql mysql -u tbk_admin -pHan0419@MySQL -D tbk -e \"SELECT 'tbk_admin connection successful' as status;\"\r"
+expect "*]#"
+
+# 测试外部连接
+send_user "\n=== 测试外部连接到3306端口 ===\n"
+send "mysql -h 127.0.0.1 -P 3306 -u root -pHan0419@MySQL -e \"SELECT 'External connection to 3306 successful' as status;\"\r"
+expect "*]#"
+
+send_user "\n=== 端口修改完成 ===\n"
+send_user "tbk-mysql容器现在运行在端口3306\n"
+send_user "外部连接地址: 60.205.0.185:3306\n"
+
+# 退出
+send "exit\r"
+expect eof

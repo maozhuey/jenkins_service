@@ -1,0 +1,52 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+
+spawn ssh root@60.205.0.185
+expect "password:"
+send "han0419/\r"
+expect "# "
+
+send "export PAGER=cat\r"
+expect "# "
+
+# 首先尝试连接外部MySQL服务（端口3306）来获取peach_wiki数据
+send "echo '=== 尝试连接外部MySQL服务 ==='\r"
+expect "# "
+send "mysql -h 60.205.0.185 -P 3306 -u peach_wiki -p'han0419/' -e 'SHOW DATABASES;' 2>&1\r"
+expect "# "
+
+# 如果外部连接成功，导出peach_wiki数据
+send "echo '=== 导出peach_wiki数据 ==='\r"
+expect "# "
+send "mysqldump -h 60.205.0.185 -P 3306 -u peach_wiki -p'han0419/' peach_wiki > /root/backup/\$(date +%Y%m%d)/peach_wiki_external_backup.sql 2>&1\r"
+expect "# "
+
+# 检查导出文件
+send "echo '=== 检查导出文件 ==='\r"
+expect "# "
+send "ls -la /root/backup/\$(date +%Y%m%d)/peach_wiki_external_backup.sql\r"
+expect "# "
+send "head -10 /root/backup/\$(date +%Y%m%d)/peach_wiki_external_backup.sql\r"
+expect "# "
+
+# 如果导出成功，导入到docker-mysql容器
+send "echo '=== 导入数据到docker-mysql容器 ==='\r"
+expect "# "
+send "docker exec -i docker-mysql mysql -u root -p'Han0419@MySQL' peach_wiki < /root/backup/\$(date +%Y%m%d)/peach_wiki_external_backup.sql\r"
+expect "# "
+
+# 验证导入结果
+send "echo '=== 验证导入结果 ==='\r"
+expect "# "
+send "docker exec docker-mysql mysql -u root -p'Han0419@MySQL' -e 'USE peach_wiki; SHOW TABLES;'\r"
+expect "# "
+
+# 检查表中的数据量
+send "echo '=== 检查表中的数据量 ==='\r"
+expect "# "
+send "docker exec docker-mysql mysql -u root -p'Han0419@MySQL' -e 'USE peach_wiki; SELECT table_name, table_rows FROM information_schema.tables WHERE table_schema = \"peach_wiki\";'\r"
+expect "# "
+
+send "exit\r"
+expect eof

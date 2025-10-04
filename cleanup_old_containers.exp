@@ -1,0 +1,80 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+
+spawn ssh root@60.205.0.185
+expect "password:"
+send "han0419/\r"
+expect "# "
+
+send "export PAGER=cat\r"
+expect "# "
+
+# 检查当前所有容器
+send "echo '=== 检查当前所有容器 ==='\r"
+expect "# "
+send "docker ps -a --format 'table {{.Names}}\\t{{.Status}}\\t{{.Image}}\\t{{.Ports}}'\r"
+expect "# "
+
+# 检查是否存在旧的tbk-nginx容器
+send "echo '=== 检查是否存在旧的tbk-nginx容器 ==='\r"
+expect "# "
+send "docker ps -a | grep tbk-nginx || echo '没有找到tbk-nginx容器'\r"
+expect "# "
+
+# 停止并删除tbk-nginx容器（如果存在）
+send "echo '=== 停止并删除tbk-nginx容器（如果存在） ==='\r"
+expect "# "
+send "if docker ps -a | grep -q tbk-nginx; then docker stop tbk-nginx && docker rm tbk-nginx; else echo '没有tbk-nginx容器需要删除'; fi\r"
+expect "# "
+
+# 检查旧的nginx配置文件
+send "echo '=== 检查旧的nginx配置文件 ==='\r"
+expect "# "
+send "ls -la /opt/apps/tbk/nginx/\r"
+expect "# "
+
+# 备份并清理旧的nginx配置（如果有的话）
+send "echo '=== 备份并清理旧的nginx配置 ==='\r"
+expect "# "
+send "if \[ -f /opt/apps/tbk/nginx/nginx.conf \]; then mv /opt/apps/tbk/nginx/nginx.conf /opt/apps/tbk/nginx/nginx.conf.backup.\$(date +%Y%m%d_%H%M%S); echo '已备份旧的nginx.conf'; else echo '没有旧的nginx.conf需要备份'; fi\r"
+expect "# "
+
+# 检查Docker网络
+send "echo '=== 检查Docker网络 ==='\r"
+expect "# "
+send "docker network ls\r"
+expect "# "
+
+# 检查tbk_tbk-network网络中的容器
+send "echo '=== 检查tbk_tbk-network网络中的容器 ==='\r"
+expect "# "
+send "docker network inspect tbk_tbk-network | grep -A 10 'Containers'\r"
+expect "# "
+
+# 检查是否有其他未使用的网络
+send "echo '=== 检查是否有其他未使用的网络 ==='\r"
+expect "# "
+send "docker network ls | grep tbk\r"
+expect "# "
+
+# 清理未使用的Docker资源
+send "echo '=== 清理未使用的Docker资源 ==='\r"
+expect "# "
+send "docker system prune -f\r"
+expect "# "
+
+# 最终检查当前运行的容器
+send "echo '=== 最终检查当前运行的容器 ==='\r"
+expect "# "
+send "docker ps --format 'table {{.Names}}\\t{{.Status}}\\t{{.Image}}\\t{{.Ports}}'\r"
+expect "# "
+
+# 测试清理后的系统是否正常
+send "echo '=== 测试清理后的系统是否正常 ==='\r"
+expect "# "
+send "curl -s -w '\\nStatus: %{http_code}\\n' http://localhost:80/health\r"
+expect "# "
+
+send "exit\r"
+expect eof

@@ -1,0 +1,82 @@
+#!/usr/bin/expect -f
+
+# 解决tbk应用端口冲突问题
+
+set timeout 60
+set server_ip "60.205.0.185"
+set server_user "root"
+set server_password "han0419/"
+
+# 连接到远程服务器
+spawn sshpass -p $server_password ssh -o StrictHostKeyChecking=no $server_user@$server_ip
+
+expect {
+    "*]#" {
+        send_user "\n=== 已连接到远程服务器 ===\n"
+    }
+    timeout {
+        send_user "\n连接服务器超时\n"
+        exit 1
+    }
+}
+
+# 进入tbk项目目录
+send "cd /root/tbk\r"
+expect "*]#"
+
+# 检查当前端口使用情况
+send_user "\n=== 检查端口使用情况 ===\n"
+send "netstat -tlnp | grep :8080\r"
+expect "*]#"
+
+send "docker ps | grep 8080\r"
+expect "*]#"
+
+# 停止tbk服务
+send_user "\n=== 停止tbk服务 ===\n"
+send "docker compose down\r"
+expect "*]#"
+
+# 修改docker-compose.yml，将tbk-app端口改为8081
+send_user "\n=== 修改tbk-app端口为8081 ===\n"
+send "sed -i 's/8080:8080/8081:8080/g' docker-compose.yml\r"
+expect "*]#"
+
+# 显示修改后的配置
+send_user "\n=== 显示修改后的配置 ===\n"
+send "cat docker-compose.yml\r"
+expect "*]#"
+
+# 重新启动tbk服务
+send_user "\n=== 重新启动tbk服务 ===\n"
+send "docker compose up -d\r"
+expect "*]#"
+
+# 等待服务启动
+send "sleep 10\r"
+expect "*]#"
+
+# 检查服务状态
+send_user "\n=== 检查服务状态 ===\n"
+send "docker compose ps\r"
+expect "*]#"
+
+# 检查应用日志
+send_user "\n=== 检查应用日志 ===\n"
+send "docker compose logs tbk-app | tail -10\r"
+expect "*]#"
+
+# 测试应用访问
+send_user "\n=== 测试应用访问 ===\n"
+send "curl -s http://localhost:8081/ || echo '应用访问测试完成'\r"
+expect "*]#"
+
+send "curl -s http://localhost:8081/health || echo '健康检查测试完成'\r"
+expect "*]#"
+
+send_user "\n=== tbk端口冲突修复完成 ===\n"
+send_user "tbk-app现在运行在端口8081\n"
+
+# 退出
+send "exit\r"
+expect eof

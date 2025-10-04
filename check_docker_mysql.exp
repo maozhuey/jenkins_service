@@ -1,0 +1,54 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+
+spawn ssh root@60.205.0.185
+expect "password:"
+send "han0419/\r"
+expect "# "
+
+send "export PAGER=cat\r"
+expect "# "
+
+# 检查docker-mysql容器的详细信息
+send "echo '=== docker-mysql容器详细信息 ==='\r"
+expect "# "
+send "docker inspect docker-mysql | grep -A 20 -B 5 -i env\r"
+expect "# "
+
+# 检查docker-mysql容器中的数据库
+send "echo '=== 检查docker-mysql容器中的数据库 ==='\r"
+expect "# "
+send "docker exec docker-mysql mysql -u root -p'Han0419@MySQL' -e 'SHOW DATABASES;'\r"
+expect "# "
+
+# 检查是否有peach_wiki数据库
+send "echo '=== 检查docker-mysql中是否有peach_wiki数据库 ==='\r"
+expect "# "
+send "docker exec docker-mysql mysql -u root -p'Han0419@MySQL' -e 'USE peach_wiki; SHOW TABLES;' 2>&1\r"
+expect "# "
+
+# 如果没有peach_wiki数据库，创建它
+send "echo '=== 创建peach_wiki数据库 ==='\r"
+expect "# "
+send "docker exec docker-mysql mysql -u root -p'Han0419@MySQL' -e 'CREATE DATABASE IF NOT EXISTS peach_wiki;'\r"
+expect "# "
+
+# 创建peach_wiki用户
+send "echo '=== 创建peach_wiki用户 ==='\r"
+expect "# "
+send "docker exec docker-mysql mysql -u root -p'Han0419@MySQL' -e \"CREATE USER IF NOT EXISTS 'peach_wiki'@'%' IDENTIFIED BY 'han0419/';\"\r"
+expect "# "
+send "docker exec docker-mysql mysql -u root -p'Han0419@MySQL' -e \"GRANT ALL PRIVILEGES ON peach_wiki.* TO 'peach_wiki'@'%';\"\r"
+expect "# "
+send "docker exec docker-mysql mysql -u root -p'Han0419@MySQL' -e \"FLUSH PRIVILEGES;\"\r"
+expect "# "
+
+# 验证用户创建
+send "echo '=== 验证用户创建 ==='\r"
+expect "# "
+send "docker exec docker-mysql mysql -u root -p'Han0419@MySQL' -e \"SELECT user, host FROM mysql.user WHERE user = 'peach_wiki';\"\r"
+expect "# "
+
+send "exit\r"
+expect eof

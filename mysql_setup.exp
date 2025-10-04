@@ -1,0 +1,34 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+
+spawn ssh root@60.205.0.185
+expect "password:"
+send "han0419/\r"
+expect "# "
+send "cd /opt/apps/tbk\r"
+expect "# "
+
+# 使用临时密码登录MySQL
+send "mysql -u root -p\r"
+expect "Enter password:"
+send "wp8c#Xa-,zXj\r"
+
+# 修改密码
+expect "mysql>"
+send "ALTER USER 'root'@'localhost' IDENTIFIED BY 'han0419/';\r"
+expect "mysql>"
+send "CREATE USER 'admin'@'%' IDENTIFIED BY 'han0419/';\r"
+expect "mysql>"
+send "GRANT ALL PRIVILEGES ON *.* TO 'admin'@'%' WITH GRANT OPTION;\r"
+expect "mysql>"
+send "FLUSH PRIVILEGES;\r"
+expect "mysql>"
+send "CREATE DATABASE IF NOT EXISTS tbk;\r"
+expect "mysql>"
+send "SHOW DATABASES;\r"
+expect "mysql>"
+send "exit\r"
+expect "# "
+send "exit\r"
+expect eof

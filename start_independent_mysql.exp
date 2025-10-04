@@ -1,0 +1,60 @@
+#!/usr/bin/expect -f
+
+# 启动独立的MySQL容器
+
+set timeout 60
+set server_ip "60.205.0.185"
+set server_user "root"
+set server_password "han0419/"
+
+# 连接到远程服务器
+spawn sshpass -p $server_password ssh -o StrictHostKeyChecking=no $server_user@$server_ip
+
+expect {
+    "*]#" {
+        send_user "\n=== 已连接到远程服务器 ===\n"
+    }
+    timeout {
+        send_user "\n连接服务器超时\n"
+        exit 1
+    }
+}
+
+# 停止并删除现有的tbk-mysql容器
+send_user "\n=== 清理现有容器 ===\n"
+send "docker stop tbk-mysql 2>/dev/null || true\r"
+expect "*]#"
+
+send "docker rm tbk-mysql 2>/dev/null || true\r"
+expect "*]#"
+
+# 启动独立的MySQL容器
+send_user "\n=== 启动独立的MySQL容器 ===\n"
+send "docker run -d --name tbk-mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=Han0419@MySQL -e MYSQL_DATABASE=tbk -e MYSQL_USER=tbk_admin -e MYSQL_PASSWORD=Han0419@MySQL mysql:8.0 --default-authentication-plugin=mysql_native_password\r"
+expect "*]#"
+
+# 等待容器启动
+send_user "\n=== 等待MySQL容器启动 ===\n"
+send "sleep 30\r"
+expect "*]#"
+
+# 检查容器状态
+send_user "\n=== 检查容器状态 ===\n"
+send "docker ps | grep tbk-mysql\r"
+expect "*]#"
+
+# 检查端口监听
+send_user "\n=== 检查端口监听 ===\n"
+send "netstat -tlnp | grep 3306\r"
+expect "*]#"
+
+# 测试连接
+send_user "\n=== 测试MySQL连接 ===\n"
+send "docker exec tbk-mysql mysql -u root -pHan0419@MySQL -e 'SELECT 1 as test;'\r"
+expect "*]#"
+
+send_user "\n=== 独立MySQL容器启动完成 ===\n"
+
+# 退出
+send "exit\r"
+expect eof

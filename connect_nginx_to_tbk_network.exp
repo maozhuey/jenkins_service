@@ -1,0 +1,66 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+
+spawn ssh root@60.205.0.185
+expect "password:"
+send "han0419/\r"
+expect "# "
+
+send "export PAGER=cat\r"
+expect "# "
+
+# 找到tbk-app所在的网络名称
+send "echo '=== 查找tbk-app所在的网络名称 ==='\r"
+expect "# "
+send "docker inspect tbk-app | grep -A 5 -B 5 '\"NetworkMode\"'\r"
+expect "# "
+
+# 检查所有网络，找到包含tbk-app的网络
+send "echo '=== 检查所有网络 ==='\r"
+expect "# "
+send "docker network ls\r"
+expect "# "
+
+# 检查每个网络的详情，找到包含tbk-app的网络
+send "echo '=== 检查包含tbk-app的网络 ==='\r"
+expect "# "
+send "for net in \\$(docker network ls --format '{{.Name}}' | grep -v bridge | grep -v host | grep -v none); do echo \"=== Network: \\$net ===\"; docker network inspect \\$net | grep -A 3 -B 3 tbk-app; done\r"
+expect "# "
+
+# 停止nginx-production容器
+send "echo '=== 停止nginx-production容器 ==='\r"
+expect "# "
+send "docker stop nginx-production\r"
+expect "# "
+
+# 将nginx-production连接到tbk网络（假设网络名为tbk_default或类似）
+send "echo '=== 尝试连接nginx-production到tbk网络 ==='\r"
+expect "# "
+send "docker network connect tbk_default nginx-production 2>/dev/null || docker network connect jenkins-service_default nginx-production 2>/dev/null || echo 'Need to find correct network name'\r"
+expect "# "
+
+# 启动nginx-production容器
+send "echo '=== 启动nginx-production容器 ==='\r"
+expect "# "
+send "docker start nginx-production\r"
+expect "# "
+
+# 等待容器启动
+send "sleep 5\r"
+expect "# "
+
+# 检查nginx-production容器状态
+send "echo '=== 检查nginx-production容器状态 ==='\r"
+expect "# "
+send "docker ps | grep nginx-production\r"
+expect "# "
+
+# 测试nginx-production到tbk-app的连接
+send "echo '=== 测试nginx-production到tbk-app的连接 ==='\r"
+expect "# "
+send "docker exec nginx-production ping -c 2 tbk-app || echo 'Still cannot ping tbk-app'\r"
+expect "# "
+
+send "exit\r"
+expect eof

@@ -1,0 +1,253 @@
+#!/usr/bin/expect -f
+
+# 部署tbk项目独立MySQL容器
+# 使用新版docker compose语法
+
+set timeout 60
+set server_ip "60.205.0.185"
+set server_user "root"
+set server_password "han0419/"
+
+# 连接到远程服务器
+spawn sshpass -p $server_password ssh -o StrictHostKeyChecking=no $server_user@$server_ip
+
+expect {
+    "*]#" {
+        send_user "\n=== 已连接到远程服务器 ===\n"
+    }
+    timeout {
+        send_user "\n连接服务器超时\n"
+        exit 1
+    }
+}
+
+# 进入tbk目录
+send "cd /root/tbk\r"
+expect "*]#"
+
+# 创建docker-compose.yml文件
+send_user "\n=== 创建docker-compose.yml配置 ===\n"
+send "cat > docker-compose.yml << 'EOF'\r"
+expect "*>"
+
+send "version: '3.8'\r"
+expect "*>"
+
+send "\r"
+expect "*>"
+
+send "services:\r"
+expect "*>"
+
+send "  tbk-db:\r"
+expect "*>"
+
+send "    image: mysql:8.0\r"
+expect "*>"
+
+send "    container_name: tbk-mysql\r"
+expect "*>"
+
+send "    restart: unless-stopped\r"
+expect "*>"
+
+send "    environment:\r"
+expect "*>"
+
+send "      MYSQL_ROOT_PASSWORD: Han0419@MySQL\r"
+expect "*>"
+
+send "      MYSQL_DATABASE: tbk\r"
+expect "*>"
+
+send "      MYSQL_USER: tbk_admin\r"
+expect "*>"
+
+send "      MYSQL_PASSWORD: Han0419@MySQL\r"
+expect "*>"
+
+send "    ports:\r"
+expect "*>"
+
+send "      - \"3307:3306\"\r"
+expect "*>"
+
+send "    volumes:\r"
+expect "*>"
+
+send "      - tbk-db-data:/var/lib/mysql\r"
+expect "*>"
+
+send "      - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro\r"
+expect "*>"
+
+send "      - ./database/schema.sql:/docker-entrypoint-initdb.d/02-schema.sql:ro\r"
+expect "*>"
+
+send "    command: --default-authentication-plugin=mysql_native_password\r"
+expect "*>"
+
+send "\r"
+expect "*>"
+
+send "volumes:\r"
+expect "*>"
+
+send "  tbk-db-data:\r"
+expect "*>"
+
+send "    driver: local\r"
+expect "*>"
+
+send "EOF\r"
+expect "*]#"
+
+# 创建database目录
+send "mkdir -p database\r"
+expect "*]#"
+
+# 创建init.sql文件
+send_user "\n=== 创建数据库初始化脚本 ===\n"
+send "cat > database/init.sql << 'EOF'\r"
+expect "*>"
+
+send "-- tbk项目数据库初始化脚本\r"
+expect "*>"
+
+send "CREATE DATABASE IF NOT EXISTS tbk CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\r"
+expect "*>"
+
+send "USE tbk;\r"
+expect "*>"
+
+send "CREATE USER IF NOT EXISTS 'tbk_admin'@'%' IDENTIFIED BY 'Han0419@MySQL';\r"
+expect "*>"
+
+send "GRANT ALL PRIVILEGES ON tbk.* TO 'tbk_admin'@'%';\r"
+expect "*>"
+
+send "CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY 'Han0419@MySQL';\r"
+expect "*>"
+
+send "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;\r"
+expect "*>"
+
+send "FLUSH PRIVILEGES;\r"
+expect "*>"
+
+send "EOF\r"
+expect "*]#"
+
+# 创建schema.sql文件
+send_user "\n=== 创建表结构脚本 ===\n"
+send "cat > database/schema.sql << 'EOF'\r"
+expect "*>"
+
+send "USE tbk;\r"
+expect "*>"
+
+send "CREATE TABLE IF NOT EXISTS categories (\r"
+expect "*>"
+
+send "    id INT AUTO_INCREMENT PRIMARY KEY,\r"
+expect "*>"
+
+send "    name VARCHAR(100) NOT NULL COMMENT '分类名称',\r"
+expect "*>"
+
+send "    slug VARCHAR(100) NOT NULL UNIQUE COMMENT '分类别名',\r"
+expect "*>"
+
+send "    description TEXT COMMENT '分类描述',\r"
+expect "*>"
+
+send "    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\r"
+expect "*>"
+
+send ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\r"
+expect "*>"
+
+send "\r"
+expect "*>"
+
+send "CREATE TABLE IF NOT EXISTS articles (\r"
+expect "*>"
+
+send "    id INT AUTO_INCREMENT PRIMARY KEY,\r"
+expect "*>"
+
+send "    title VARCHAR(200) NOT NULL COMMENT '文章标题',\r"
+expect "*>"
+
+send "    content LONGTEXT COMMENT '文章内容',\r"
+expect "*>"
+
+send "    category_id INT,\r"
+expect "*>"
+
+send "    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\r"
+expect "*>"
+
+send ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\r"
+expect "*>"
+
+send "EOF\r"
+expect "*]#"
+
+# 停止现有容器
+send_user "\n=== 停止现有tbk-mysql容器 ===\n"
+send "docker stop tbk-mysql 2>/dev/null || true\r"
+expect "*]#"
+
+send "docker rm tbk-mysql 2>/dev/null || true\r"
+expect "*]#"
+
+# 启动新的MySQL容器
+send_user "\n=== 启动tbk MySQL容器 ===\n"
+send "docker compose up -d tbk-db\r"
+expect {
+    "*]#" {
+        send_user "\n容器启动命令已执行\n"
+    }
+    timeout {
+        send_user "\n容器启动超时\n"
+        exit 1
+    }
+}
+
+# 等待容器启动
+send_user "\n=== 等待MySQL容器启动 ===\n"
+send "sleep 40\r"
+expect "*]#"
+
+# 检查容器状态
+send "docker ps | grep tbk-mysql\r"
+expect "*]#"
+
+# 检查端口
+send "netstat -tlnp | grep 3307\r"
+expect "*]#"
+
+# 测试连接
+send_user "\n=== 测试MySQL连接 ===\n"
+send "docker exec tbk-mysql mysql -u root -pHan0419@MySQL -e \"SHOW DATABASES;\"\r"
+expect "*]#"
+
+send "docker exec tbk-mysql mysql -u tbk_admin -pHan0419@MySQL -D tbk -e \"SHOW TABLES;\"\r"
+expect "*]#"
+
+# 测试外部连接
+send_user "\n=== 测试外部连接 ===\n"
+send "mysql -h 127.0.0.1 -P 3307 -u root -pHan0419@MySQL -e \"SELECT 'Connection successful' as status;\"\r"
+expect "*]#"
+
+send_user "\n=== 部署完成 ===\n"
+send_user "容器名称: tbk-mysql\n"
+send_user "端口: 3307\n"
+send_user "数据库: tbk\n"
+send_user "用户: root / tbk_admin\n"
+send_user "密码: Han0419@MySQL\n"
+
+# 退出
+send "exit\r"
+expect eof

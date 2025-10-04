@@ -1,0 +1,78 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+
+spawn ssh root@60.205.0.185
+expect "password:"
+send "han0419/\r"
+expect "# "
+
+send "export PAGER=cat\r"
+expect "# "
+
+# 检查docker-mysql中的peach_wiki数据库和用户
+send "echo '=== 检查docker-mysql中的peach_wiki数据库 ==='\r"
+expect "# "
+send "docker exec docker-mysql mysql -u root -p'Han0419@MySQL' -e 'SHOW DATABASES;'\r"
+expect "# "
+
+# 检查peach_wiki用户权限
+send "echo '=== 检查peach_wiki用户权限 ==='\r"
+expect "# "
+send "docker exec docker-mysql mysql -u root -p'Han0419@MySQL' -e 'SELECT user, host FROM mysql.user WHERE user=\"peach_wiki\";'\r"
+expect "# "
+
+# 测试peach_wiki用户连接
+send "echo '=== 测试peach_wiki用户连接 ==='\r"
+expect "# "
+send "docker exec docker-mysql mysql -u peach_wiki -p'han0419/' -e 'SELECT 1;'\r"
+expect "# "
+
+# 检查peach_wiki数据库中的表
+send "echo '=== 检查peach_wiki数据库中的表 ==='\r"
+expect "# "
+send "docker exec docker-mysql mysql -u peach_wiki -p'han0419/' -e 'USE peach_wiki; SHOW TABLES;'\r"
+expect "# "
+
+# 从tbk数据库复制一些基础数据到peach_wiki数据库
+send "echo '=== 从tbk数据库复制数据到peach_wiki数据库 ==='\r"
+expect "# "
+send "docker exec docker-mysql mysql -u root -p'Han0419@MySQL' -e 'CREATE TABLE IF NOT EXISTS peach_wiki.articles LIKE tbk.articles;'\r"
+expect "# "
+send "docker exec docker-mysql mysql -u root -p'Han0419@MySQL' -e 'CREATE TABLE IF NOT EXISTS peach_wiki.categories LIKE tbk.categories;'\r"
+expect "# "
+send "docker exec docker-mysql mysql -u root -p'Han0419@MySQL' -e 'INSERT IGNORE INTO peach_wiki.articles SELECT * FROM tbk.articles;'\r"
+expect "# "
+send "docker exec docker-mysql mysql -u root -p'Han0419@MySQL' -e 'INSERT IGNORE INTO peach_wiki.categories SELECT * FROM tbk.categories;'\r"
+expect "# "
+
+# 验证数据复制结果
+send "echo '=== 验证数据复制结果 ==='\r"
+expect "# "
+send "docker exec docker-mysql mysql -u peach_wiki -p'han0419/' -e 'USE peach_wiki; SELECT COUNT(*) as article_count FROM articles; SELECT COUNT(*) as category_count FROM categories;'\r"
+expect "# "
+
+# 重启tbk-app容器以重新连接数据库
+send "echo '=== 重启tbk-app容器 ==='\r"
+expect "# "
+send "docker restart tbk-app\r"
+expect "# "
+
+# 等待容器重启
+send "sleep 10\r"
+expect "# "
+
+# 测试新的数据库连接
+send "echo '=== 测试新的数据库连接 ==='\r"
+expect "# "
+send "curl -s http://localhost:8081/health\r"
+expect "# "
+
+# 测试API健康检查
+send "echo '=== 测试API健康检查 ==='\r"
+expect "# "
+send "curl -s http://localhost:80/api/health\r"
+expect "# "
+
+send "exit\r"
+expect eof

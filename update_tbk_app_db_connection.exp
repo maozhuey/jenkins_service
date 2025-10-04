@@ -1,0 +1,63 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+
+spawn ssh root@60.205.0.185
+expect "password:"
+send "han0419/\r"
+expect "# "
+
+send "export PAGER=cat\r"
+expect "# "
+
+# 检查tbk-app当前的环境变量
+send "echo '=== 检查tbk-app当前的环境变量 ==='\r"
+expect "# "
+send "docker exec tbk-app env | grep DB\r"
+expect "# "
+
+# 检查docker-mysql容器是否在tbk_tbk-network网络中
+send "echo '=== 检查docker-mysql容器的网络 ==='\r"
+expect "# "
+send "docker inspect docker-mysql | grep -A 10 'Networks'\r"
+expect "# "
+
+# 将docker-mysql连接到tbk_tbk-network网络
+send "echo '=== 将docker-mysql连接到tbk_tbk-network网络 ==='\r"
+expect "# "
+send "docker network connect tbk_tbk-network docker-mysql\r"
+expect "# "
+
+# 验证docker-mysql在tbk_tbk-network中的连接
+send "echo '=== 验证docker-mysql网络连接 ==='\r"
+expect "# "
+send "docker exec tbk-app ping -c 2 docker-mysql\r"
+expect "# "
+
+# 停止tbk-app容器
+send "echo '=== 停止tbk-app容器 ==='\r"
+expect "# "
+send "docker stop tbk-app\r"
+expect "# "
+
+# 检查tbk-app容器的启动命令和配置
+send "echo '=== 检查tbk-app容器的配置 ==='\r"
+expect "# "
+send "docker inspect tbk-app | grep -A 20 -B 5 'Env'\r"
+expect "# "
+
+# 重新启动tbk-app容器，但需要更新环境变量
+# 首先备份当前容器
+send "echo '=== 创建tbk-app容器的备份 ==='\r"
+expect "# "
+send "docker commit tbk-app tbk-app-backup\r"
+expect "# "
+
+# 获取tbk-app的镜像和启动参数
+send "echo '=== 获取tbk-app的详细配置 ==='\r"
+expect "# "
+send "docker inspect tbk-app | grep -A 5 -B 5 'Image\\|Cmd\\|Entrypoint'\r"
+expect "# "
+
+send "exit\r"
+expect eof

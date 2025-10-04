@@ -1,0 +1,84 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+
+spawn ssh root@60.205.0.185
+expect "password:"
+send "han0419/\r"
+expect "# "
+
+send "export PAGER=cat\r"
+expect "# "
+
+# 检查当前所有数据库相关容器
+send "echo '=== 检查当前所有数据库相关容器 ==='\r"
+expect "# "
+send "docker ps -a | grep mysql\r"
+expect "# "
+
+# 检查tbk-mysql容器的状态和用途
+send "echo '=== 检查tbk-mysql容器的详细信息 ==='\r"
+expect "# "
+send "docker inspect tbk-mysql | grep -A 5 -B 5 'Env\\|Mounts\\|NetworkMode'\r"
+expect "# "
+
+# 检查tbk-mysql是否有重要数据
+send "echo '=== 检查tbk-mysql是否有重要数据 ==='\r"
+expect "# "
+send "docker exec tbk-mysql mysql -u root -phan0419/ -e \"SHOW DATABASES;\"\r"
+expect "# "
+
+# 检查tbk-mysql中是否有peach_wiki数据库
+send "echo '=== 检查tbk-mysql中是否有peach_wiki数据库 ==='\r"
+expect "# "
+send "docker exec tbk-mysql mysql -u root -phan0419/ -e \"USE peach_wiki; SHOW TABLES;\" 2>/dev/null || echo 'tbk-mysql中没有peach_wiki数据库'\r"
+expect "# "
+
+# 检查docker-mysql中的数据
+send "echo '=== 检查docker-mysql中的数据 ==='\r"
+expect "# "
+send "docker exec docker-mysql mysql -u root -phan0419/ -e \"SHOW DATABASES;\"\r"
+expect "# "
+send "docker exec docker-mysql mysql -u peach_wiki -phan0419/ peach_wiki -e \"SHOW TABLES;\"\r"
+expect "# "
+
+# 确认当前应用使用的是哪个数据库
+send "echo '=== 确认当前应用使用的是哪个数据库 ==='\r"
+expect "# "
+send "docker exec tbk-app env | grep DB_\r"
+expect "# "
+
+# 测试应用连接
+send "echo '=== 测试应用数据库连接 ==='\r"
+expect "# "
+send "curl -s http://localhost:80/db-test\r"
+expect "# "
+
+# 如果tbk-mysql没有重要数据，则停止并删除它
+send "echo '=== 准备停止并删除tbk-mysql容器 ==='\r"
+expect "# "
+send "echo '警告：即将删除tbk-mysql容器，请确认它不包含重要数据'\r"
+expect "# "
+send "docker stop tbk-mysql\r"
+expect "# "
+send "docker rm tbk-mysql\r"
+expect "# "
+
+# 检查清理后的容器状态
+send "echo '=== 检查清理后的容器状态 ==='\r"
+expect "# "
+send "docker ps | grep mysql\r"
+expect "# "
+
+# 最终测试应用是否正常
+send "echo '=== 最终测试应用是否正常 ==='\r"
+expect "# "
+send "curl -s -w '\\nStatus: %{http_code}\\n' http://localhost:80/health\r"
+expect "# "
+send "curl -s -w '\\nStatus: %{http_code}\\n' http://localhost:80/db-test\r"
+expect "# "
+send "curl -s -w '\\nStatus: %{http_code}\\n' http://localhost:80/categories\r"
+expect "# "
+
+send "exit\r"
+expect eof

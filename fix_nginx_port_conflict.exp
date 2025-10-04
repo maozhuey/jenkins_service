@@ -1,0 +1,78 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+
+spawn ssh root@60.205.0.185
+expect "password:"
+send "han0419/\r"
+expect "# "
+
+send "export PAGER=cat\r"
+expect "# "
+
+# 检查系统级nginx状态
+send "echo '=== 检查系统级nginx状态 ==='\r"
+expect "# "
+send "systemctl status nginx\r"
+expect "# "
+
+# 停止系统级nginx
+send "echo '=== 停止系统级nginx ==='\r"
+expect "# "
+send "systemctl stop nginx\r"
+expect "# "
+
+# 禁用系统级nginx自启动
+send "echo '=== 禁用系统级nginx自启动 ==='\r"
+expect "# "
+send "systemctl disable nginx\r"
+expect "# "
+
+# 检查端口80状态
+send "echo '=== 检查端口80状态 ==='\r"
+expect "# "
+send "netstat -tlnp | grep :80\r"
+expect "# "
+
+# 重启nginx-production容器
+send "echo '=== 重启nginx-production容器 ==='\r"
+expect "# "
+send "docker restart nginx-production\r"
+expect "# "
+
+# 等待容器启动
+send "sleep 5\r"
+expect "# "
+
+# 检查容器状态
+send "echo '=== 检查容器状态 ==='\r"
+expect "# "
+send "docker ps | grep nginx-production\r"
+expect "# "
+
+# 再次检查端口80状态
+send "echo '=== 再次检查端口80状态 ==='\r"
+expect "# "
+send "netstat -tlnp | grep :80\r"
+expect "# "
+
+# 测试所有端点
+send "echo '=== 测试所有端点 ==='\r"
+expect "# "
+send "curl -s -w '\\nStatus: %{http_code}\\n' http://localhost:80/\r"
+expect "# "
+send "curl -s -w '\\nStatus: %{http_code}\\n' http://localhost:80/health\r"
+expect "# "
+send "curl -s -w '\\nStatus: %{http_code}\\n' http://localhost:80/api/health\r"
+expect "# "
+send "curl -s -w '\\nStatus: %{http_code}\\n' http://localhost:80/categories\r"
+expect "# "
+
+# 检查nginx容器日志
+send "echo '=== 检查nginx容器日志 ==='\r"
+expect "# "
+send "docker logs --tail 10 nginx-production\r"
+expect "# "
+
+send "exit\r"
+expect eof

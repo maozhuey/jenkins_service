@@ -1,0 +1,44 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+
+spawn ssh root@60.205.0.185
+expect "password:"
+send "han0419/\r"
+expect "# "
+
+send "export PAGER=cat\r"
+expect "# "
+
+# 查看完整的app.js文件，特别是/api/health端点
+send "echo '=== 查看完整的app.js文件 ==='\r"
+expect "# "
+send "docker exec tbk-app cat /app/app.js\r"
+expect "# "
+
+# 检查是否有其他路由文件
+send "echo '=== 检查是否有其他路由文件 ==='\r"
+expect "# "
+send "docker exec tbk-app find /app -name '*.js' | grep -v node_modules\r"
+expect "# "
+
+# 检查应用的日志，看看/api/health请求的处理过程
+send "echo '=== 检查应用日志 ==='\r"
+expect "# "
+send "docker logs --tail 10 tbk-app\r"
+expect "# "
+
+# 直接测试/api/health端点（绕过nginx）
+send "echo '=== 直接测试/api/health端点 ==='\r"
+expect "# "
+send "curl -s http://localhost:8081/api/health\r"
+expect "# "
+
+# 测试nginx的代理配置
+send "echo '=== 检查nginx配置中的/api/health代理 ==='\r"
+expect "# "
+send "cat /opt/apps/tbk/nginx/production.conf | grep -A 10 -B 5 '/api/health'\r"
+expect "# "
+
+send "exit\r"
+expect eof

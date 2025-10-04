@@ -1,0 +1,66 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+
+spawn ssh root@60.205.0.185
+expect "password:"
+send "han0419/\r"
+expect "# "
+
+send "export PAGER=cat\r"
+expect "# "
+
+# 检查tbk-app所在的网络
+send "echo '=== 检查tbk-app所在的网络 ==='\r"
+expect "# "
+send "docker inspect tbk-app | grep -A 10 -B 5 NetworkMode\r"
+expect "# "
+
+# 检查所有自定义网络
+send "echo '=== 检查所有Docker网络 ==='\r"
+expect "# "
+send "docker network ls\r"
+expect "# "
+
+# 检查tbk-app的网络详情
+send "echo '=== 检查tbk-app的网络详情 ==='\r"
+expect "# "
+send "docker inspect tbk-app | grep -A 20 'Networks'\r"
+expect "# "
+
+# 备份原始nginx配置
+send "echo '=== 备份原始nginx配置 ==='\r"
+expect "# "
+send "cp /opt/apps/tbk/nginx/production.conf /opt/apps/tbk/nginx/production.conf.backup\r"
+expect "# "
+
+# 更新nginx配置，将tbk-production:3000改为tbk-app:8080
+send "echo '=== 更新nginx配置 ==='\r"
+expect "# "
+send "sed -i 's/tbk-production:3000/tbk-app:8080/g' /opt/apps/tbk/nginx/production.conf\r"
+expect "# "
+
+# 检查更新后的配置
+send "echo '=== 检查更新后的nginx配置 ==='\r"
+expect "# "
+send "grep -n 'tbk-app\\|tbk-production' /opt/apps/tbk/nginx/production.conf\r"
+expect "# "
+
+# 重启nginx-production容器
+send "echo '=== 重启nginx-production容器 ==='\r"
+expect "# "
+send "docker restart nginx-production\r"
+expect "# "
+
+# 等待容器启动
+send "sleep 5\r"
+expect "# "
+
+# 检查nginx-production容器状态
+send "echo '=== 检查nginx-production容器状态 ==='\r"
+expect "# "
+send "docker ps | grep nginx-production\r"
+expect "# "
+
+send "exit\r"
+expect eof

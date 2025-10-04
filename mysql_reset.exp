@@ -1,0 +1,66 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+
+spawn ssh root@60.205.0.185
+expect "password:"
+send "han0419/\r"
+expect "# "
+send "cd /opt/apps/tbk\r"
+expect "# "
+
+# 停止MySQL
+send "pkill mysqld\r"
+expect "# "
+send "sleep 3\r"
+expect "# "
+
+# 启动MySQL跳过权限表
+send "/usr/sbin/mysqld --user=mysql --skip-grant-tables --skip-networking &\r"
+expect "# "
+send "sleep 5\r"
+expect "# "
+
+# 连接MySQL并重置密码
+send "mysql -u root\r"
+expect "mysql>"
+send "USE mysql;\r"
+expect "mysql>"
+send "UPDATE user SET authentication_string='' WHERE User='root';\r"
+expect "mysql>"
+send "FLUSH PRIVILEGES;\r"
+expect "mysql>"
+send "ALTER USER 'root'@'localhost' IDENTIFIED BY 'Han0419@MySQL';\r"
+expect "mysql>"
+send "CREATE USER 'admin'@'%' IDENTIFIED BY 'Han0419@MySQL';\r"
+expect "mysql>"
+send "GRANT ALL PRIVILEGES ON *.* TO 'admin'@'%' WITH GRANT OPTION;\r"
+expect "mysql>"
+send "FLUSH PRIVILEGES;\r"
+expect "mysql>"
+send "exit\r"
+expect "# "
+
+# 重启MySQL正常模式
+send "pkill mysqld\r"
+expect "# "
+send "sleep 3\r"
+expect "# "
+send "/usr/sbin/mysqld --user=mysql --daemonize\r"
+expect "# "
+send "sleep 5\r"
+expect "# "
+
+# 测试连接
+send "mysql -u admin -p'Han0419@MySQL' -e 'SHOW DATABASES;'\r"
+expect "# "
+send "mysql -u admin -p'Han0419@MySQL' -e 'CREATE DATABASE IF NOT EXISTS tbk;'\r"
+expect "# "
+send "mysql -u admin -p'Han0419@MySQL' -e 'SHOW DATABASES;'\r"
+expect "# "
+
+# 检查端口监听
+send "netstat -tlnp | grep 3306\r"
+expect "# "
+send "exit\r"
+expect eof

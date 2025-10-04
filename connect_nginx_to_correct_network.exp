@@ -1,0 +1,66 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+
+spawn ssh root@60.205.0.185
+expect "password:"
+send "han0419/\r"
+expect "# "
+
+send "export PAGER=cat\r"
+expect "# "
+
+# 检查tbk_tbk-network网络详情
+send "echo '=== 检查tbk_tbk-network网络详情 ==='\r"
+expect "# "
+send "docker network inspect tbk_tbk-network\r"
+expect "# "
+
+# 停止nginx-production容器
+send "echo '=== 停止nginx-production容器 ==='\r"
+expect "# "
+send "docker stop nginx-production\r"
+expect "# "
+
+# 将nginx-production连接到tbk_tbk-network网络
+send "echo '=== 连接nginx-production到tbk_tbk-network网络 ==='\r"
+expect "# "
+send "docker network connect tbk_tbk-network nginx-production\r"
+expect "# "
+
+# 启动nginx-production容器
+send "echo '=== 启动nginx-production容器 ==='\r"
+expect "# "
+send "docker start nginx-production\r"
+expect "# "
+
+# 等待容器启动
+send "sleep 5\r"
+expect "# "
+
+# 检查nginx-production容器状态
+send "echo '=== 检查nginx-production容器状态 ==='\r"
+expect "# "
+send "docker ps | grep nginx-production\r"
+expect "# "
+
+# 测试nginx-production到tbk-app的连接
+send "echo '=== 测试nginx-production到tbk-app的连接 ==='\r"
+expect "# "
+send "docker exec nginx-production ping -c 2 tbk-app\r"
+expect "# "
+
+# 测试nginx代理功能
+send "echo '=== 测试nginx代理功能 ==='\r"
+expect "# "
+send "curl -s -I http://localhost:80/ | head -5\r"
+expect "# "
+
+# 测试nginx健康检查
+send "echo '=== 测试nginx健康检查 ==='\r"
+expect "# "
+send "curl -s http://localhost:80/health\r"
+expect "# "
+
+send "exit\r"
+expect eof

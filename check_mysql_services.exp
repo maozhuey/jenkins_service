@@ -1,0 +1,41 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+
+spawn ssh root@60.205.0.185
+expect "password:"
+send "han0419/\r"
+expect "# "
+
+# 检查所有MySQL相关进程
+send "ps aux | grep mysql | grep -v grep\r"
+expect "# "
+
+# 检查端口占用情况
+send "netstat -tlnp | grep 3306\r"
+expect "# "
+
+# 检查是否有Docker容器运行MySQL
+send "docker ps | grep mysql\r"
+expect "# "
+
+# 检查系统服务
+send "systemctl status mysql 2>/dev/null || echo 'MySQL systemd service not found'\r"
+expect "# "
+send "systemctl status mysqld 2>/dev/null || echo 'MySQLd systemd service not found'\r"
+expect "# "
+
+# 检查MySQL配置文件
+send "ls -la /etc/my.cnf /etc/mysql/ 2>/dev/null || echo 'Config files not found in standard locations'\r"
+expect "# "
+
+# 检查MySQL数据目录
+send "ls -la /var/lib/mysql/ | head -10\r"
+expect "# "
+
+# 尝试连接并查看当前连接的MySQL实例信息
+send "mysql -u admin -p'Han0419@MySQL' -e 'SELECT @@hostname, @@port, @@datadir, @@version;'\r"
+expect "# "
+
+send "exit\r"
+expect eof

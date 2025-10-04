@@ -1,0 +1,100 @@
+#!/usr/bin/expect -f
+
+# 删除系统MySQL服务脚本
+
+set timeout 30
+set server_ip "60.205.0.185"
+set server_user "root"
+set server_password "han0419/"
+
+# 连接到远程服务器
+spawn sshpass -p $server_password ssh -o StrictHostKeyChecking=no $server_user@$server_ip
+
+expect {
+    "*]#" {
+        send_user "\n=== 已连接到远程服务器 ===\n"
+    }
+    timeout {
+        send_user "\n连接服务器超时\n"
+        exit 1
+    }
+}
+
+# 检查当前MySQL状态
+send_user "\n=== 检查当前MySQL状态 ===\n"
+send "ps aux | grep mysql | grep -v grep\r"
+expect "*]#"
+
+send "netstat -tlnp | grep 3306\r"
+expect "*]#"
+
+# 显示数据库列表
+send_user "\n=== 当前数据库列表 ===\n"
+send "mysql -h 127.0.0.1 -P 3306 -u root -pHan0419@MySQL -e \"SHOW DATABASES;\"\r"
+expect "*]#"
+
+send_user "\n=== 开始删除MySQL服务 ===\n"
+
+# 1. 停止MySQL服务
+send_user "\n--- 停止MySQL服务 ---\n"
+send "systemctl stop mysqld\r"
+expect "*]#"
+
+# 2. 强制停止MySQL进程
+send_user "\n--- 强制停止MySQL进程 ---\n"
+send "pkill -f mysqld\r"
+expect "*]#"
+
+# 等待进程完全停止
+send "sleep 3\r"
+expect "*]#"
+
+# 3. 禁用MySQL服务自启动
+send_user "\n--- 禁用MySQL服务自启动 ---\n"
+send "systemctl disable mysqld\r"
+expect "*]#"
+
+# 4. 卸载MySQL软件包
+send_user "\n--- 卸载MySQL软件包 ---\n"
+send "yum remove -y mysql-server mysql mysql-devel mysql-common mysql-libs\r"
+expect "*]#"
+
+# 5. 删除MySQL配置文件
+send_user "\n--- 删除MySQL配置文件 ---\n"
+send "rm -rf /etc/mysql /etc/my.cnf /etc/my.cnf.d\r"
+expect "*]#"
+
+# 6. 删除MySQL数据目录
+send_user "\n--- 删除MySQL数据目录 ---\n"
+send "rm -rf /var/lib/mysql\r"
+expect "*]#"
+
+# 7. 删除MySQL日志文件
+send_user "\n--- 删除MySQL日志文件 ---\n"
+send "rm -rf /var/log/mysql* /var/log/mysqld.log\r"
+expect "*]#"
+
+# 8. 删除MySQL用户
+send_user "\n--- 删除MySQL用户 ---\n"
+send "userdel mysql\r"
+expect "*]#"
+
+# 验证删除结果
+send_user "\n=== 验证删除结果 ===\n"
+send "ps aux | grep mysql | grep -v grep\r"
+expect "*]#"
+
+send "netstat -tlnp | grep 3306\r"
+expect "*]#"
+
+send "systemctl status mysqld\r"
+expect "*]#"
+
+send "ls -la /var/lib/mysql\r"
+expect "*]#"
+
+send_user "\n=== MySQL服务删除完成 ===\n"
+
+# 退出
+send "exit\r"
+expect eof

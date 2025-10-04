@@ -48,6 +48,9 @@ jenkins_home/caches/
 jenkins_home/.cache/
 jenkins_home/.npm/
 jenkins_home/.docker/buildx/refs/
+
+# Project documentation files
+AAA项目架构文档.md
 jenkins_home/.java/fonts/
 jenkins_home/queue.xml.bak
 jenkins_home/jobs/*/builds/*/
