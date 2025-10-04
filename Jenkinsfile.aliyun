@@ -316,9 +316,10 @@ pipeline {
                               case \$DEPLOY_STRATEGY in
                                 recreate)
                                   docker compose \$ENV_ARG -f ${COMPOSE_FILE_REMOTE} down --remove-orphans || true
-                                  docker network prune -f || true
-                                  echo "Creating required networks..."
-                                  docker network create tbk_app-network || true
+                                  # 只清理未使用的网络，但保留外部网络
+                                  docker network prune -f --filter "label!=external" || true
+                                  echo "Ensuring required external networks exist..."
+                                  docker network create tbk_app-network --subnet=172.21.0.0/16 || true
                                   echo "Pulling latest image..."
                                   docker compose \$ENV_ARG -f ${COMPOSE_FILE_REMOTE} pull tbk-production
                                   echo "Starting services with force recreate..."
@@ -351,9 +352,10 @@ pipeline {
                                   ;;
                                 rolling|*)
                                   docker compose \$ENV_ARG -f ${COMPOSE_FILE_REMOTE} down --remove-orphans || true
-                                  docker network prune -f || true
-                                  echo "Creating required networks..."
-                                  docker network create tbk_app-network || true
+                                  # 只清理未使用的网络，但保留外部网络
+                                  docker network prune -f --filter "label!=external" || true
+                                  echo "Ensuring required external networks exist..."
+                                   docker network create tbk_app-network --subnet=172.21.0.0/16 || true
                                   echo "Pulling latest image..."
                                   docker compose \$ENV_ARG -f ${COMPOSE_FILE_REMOTE} pull tbk-production
                                   echo "Starting services (rolling)..."
