@@ -1,0 +1,117 @@
+#!/usr/bin/expect -f
+
+# MySQL连接诊断脚本
+set timeout 30
+set server_ip "60.205.0.185"
+set password "han0419/"
+
+puts "=== MySQL连接诊断开始 ==="
+
+# 连接到远程服务器
+spawn ssh root@$server_ip
+expect {
+    "password:" {
+        send "$password\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "# " {
+        puts "✅ SSH连接成功"
+    }
+    timeout {
+        puts "❌ SSH连接超时"
+        exit 1
+    }
+}
+
+# 1. 检查容器状态
+puts "\n=== 1. 检查docker-mysql容器状态 ==="
+send "docker ps | grep docker-mysql\r"
+expect "# "
+
+# 2. 检查端口监听
+puts "\n=== 2. 检查端口3306监听状态 ==="
+send "netstat -tlnp | grep 3306\r"
+expect "# "
+
+# 3. 检查MySQL配置文件中的bind-address
+puts "\n=== 3. 检查MySQL绑定地址配置 ==="
+send "docker exec docker-mysql cat /etc/mysql/mysql.conf.d/mysqld.cnf | grep bind-address\r"
+expect "# "
+
+# 4. 检查MySQL进程
+puts "\n=== 4. 检查MySQL进程状态 ==="
+send "docker exec docker-mysql ps aux | grep mysql\r"
+expect "# "
+
+# 5. 进入MySQL检查用户权限
+puts "\n=== 5. 详细检查MySQL用户权限 ==="
+send "docker exec -it docker-mysql mysql -uroot -p$password\r"
+expect {
+    "mysql>" {
+        puts "✅ MySQL连接成功"
+        
+        # 检查所有root用户
+        send "SELECT user, host, authentication_string FROM mysql.user WHERE user='root';\r"
+        expect "mysql>"
+        
+        # 检查具体权限
+        send "SHOW GRANTS FOR 'root'@'%';\r"
+        expect "mysql>"
+        
+        # 尝试创建测试用户
+        send "CREATE USER IF NOT EXISTS 'test'@'%' IDENTIFIED BY '$password';\r"
+        expect "mysql>"
+        
+        send "GRANT ALL PRIVILEGES ON *.* TO 'test'@'%' WITH GRANT OPTION;\r"
+        expect "mysql>"
+        
+        send "FLUSH PRIVILEGES;\r"
+        expect "mysql>"
+        
+        # 验证新用户
+        send "SELECT user, host FROM mysql.user WHERE user='test';\r"
+        expect "mysql>"
+        
+        send "exit\r"
+        expect "# "
+    }
+    "Access denied" {
+        puts "❌ MySQL root用户密码错误"
+    }
+    timeout {
+        puts "❌ MySQL连接超时"
+    }
+}
+
+# 6. 测试从容器外部连接
+puts "\n=== 6. 测试从服务器本地连接MySQL ==="
+send "mysql -h127.0.0.1 -P3306 -uroot -p$password -e 'SELECT VERSION();'\r"
+expect "# "
+
+# 7. 检查防火墙状态
+puts "\n=== 7. 检查防火墙状态 ==="
+send "ufw status\r"
+expect "# "
+
+# 8. 检查iptables规则
+puts "\n=== 8. 检查iptables规则 ==="
+send "iptables -L -n | grep 3306\r"
+expect "# "
+
+# 9. 重新设置root密码（确保正确）
+puts "\n=== 9. 重新设置root用户密码 ==="
+send "docker exec docker-mysql mysql -uroot -p$password -e \"ALTER USER 'root'@'localhost' IDENTIFIED BY '$password'; ALTER USER 'root'@'%' IDENTIFIED BY '$password'; FLUSH PRIVILEGES;\"\r"
+expect "# "
+
+# 10. 最终连接测试
+puts "\n=== 10. 最终连接测试 ==="
+send "docker exec docker-mysql mysql -uroot -p$password -e \"SELECT 'Connection successful' as status;\"\r"
+expect "# "
+
+puts "\n=== 诊断完成 ==="
+send "exit\r"
+expect eof

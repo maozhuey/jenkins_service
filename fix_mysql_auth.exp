@@ -1,0 +1,104 @@
+#!/usr/bin/expect -f
+
+# MySQL认证修复脚本
+set timeout 30
+set server_ip "60.205.0.185"
+set password "han0419/"
+
+puts "=== MySQL认证修复开始 ==="
+
+# 连接到远程服务器
+spawn ssh root@$server_ip
+expect {
+    "password:" {
+        send "$password\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "# " {
+        puts "✅ SSH连接成功"
+    }
+}
+
+# 进入MySQL修复认证
+puts "\n=== 修复MySQL用户认证 ==="
+send "docker exec -it docker-mysql mysql -uroot -p$password\r"
+expect {
+    "mysql>" {
+        puts "✅ MySQL连接成功，开始修复认证"
+        
+        # 删除现有的root用户（除了localhost）
+        send "DROP USER IF EXISTS 'root'@'%';\r"
+        expect "mysql>"
+        
+        send "DROP USER IF EXISTS 'root'@'39.148.171.218';\r"
+        expect "mysql>"
+        
+        # 重新创建root用户，使用mysql_native_password认证
+        send "CREATE USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY '$password';\r"
+        expect "mysql>"
+        
+        send "CREATE USER 'root'@'39.148.171.218' IDENTIFIED WITH mysql_native_password BY '$password';\r"
+        expect "mysql>"
+        
+        # 授予完整权限
+        send "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;\r"
+        expect "mysql>"
+        
+        send "GRANT ALL PRIVILEGES ON *.* TO 'root'@'39.148.171.218' WITH GRANT OPTION;\r"
+        expect "mysql>"
+        
+        # 刷新权限
+        send "FLUSH PRIVILEGES;\r"
+        expect "mysql>"
+        
+        # 验证用户创建
+        send "SELECT user, host, plugin FROM mysql.user WHERE user='root';\r"
+        expect "mysql>"
+        
+        # 显示权限
+        send "SHOW GRANTS FOR 'root'@'%';\r"
+        expect "mysql>"
+        
+        send "exit\r"
+        expect "# "
+        puts "✅ MySQL认证修复完成"
+    }
+    "Access denied" {
+        puts "❌ MySQL连接失败"
+        exit 1
+    }
+}
+
+# 重启MySQL容器以确保配置生效
+puts "\n=== 重启MySQL容器 ==="
+send "docker restart docker-mysql\r"
+expect "# "
+
+# 等待容器启动
+puts "等待MySQL容器启动..."
+send "sleep 10\r"
+expect "# "
+
+# 验证容器状态
+send "docker ps | grep docker-mysql\r"
+expect "# "
+
+# 最终连接测试
+puts "\n=== 最终连接测试 ==="
+send "docker exec docker-mysql mysql -uroot -p$password -e \"SELECT 'MySQL认证修复成功' as status;\"\r"
+expect "# "
+
+puts "\n=== 认证修复完成 ==="
+puts "现在可以尝试用Navicat连接了！"
+puts "连接信息："
+puts "服务器: 60.205.0.185"
+puts "端口: 3306"
+puts "用户名: root"
+puts "密码: han0419/"
+
+send "exit\r"
+expect eof

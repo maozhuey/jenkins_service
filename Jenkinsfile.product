@@ -1,0 +1,265 @@
+pipeline {
+    agent any
+    
+    parameters {
+        stringParam(
+            name: 'PROJECT',
+            defaultValue: 'tbk',
+            description: '项目标识（product目录下的项目名称）'
+        )
+        booleanParam(
+            name: 'CONFIRM_PRODUCTION_DEPLOY',
+            defaultValue: false,
+            description: '确认部署到生产环境 (谨慎操作)'
+        )
+        booleanParam(
+            name: 'AUTO_DEPLOY_ENABLED',
+            defaultValue: true,
+            description: '启用自动部署到生产环境'
+        )
+        choice(
+            name: 'DEPLOY_STRATEGY',
+            choices: ['rolling', 'recreate', 'blue-green'],
+            description: '部署策略'
+        )
+        stringParam(
+            name: 'BRANCH_INFO',
+            defaultValue: 'main (生产环境)',
+            description: '构建分支信息'
+        )
+    }
+    
+    environment {
+        // Aliyun ACR Configuration
+        DOCKER_REGISTRY = 'crpi-p6joc7xl4atpiic8.cn-hangzhou.personal.cr.aliyuncs.com'
+        DOCKER_NAMESPACE = 'hanchanglin'
+        DOCKER_CREDENTIALS = 'aliyun-acr'
+        
+        // Application Configuration
+        APP_NAME = "${params.PROJECT}"
+        NODE_VERSION = '18'
+        
+        // Build Configuration
+        BUILD_NUMBER = "${env.BUILD_NUMBER}"
+        GIT_COMMIT_SHORT = "${env.GIT_COMMIT?.take(7) ?: 'unknown'}"
+        DOCKER_TAG = "${BUILD_NUMBER}-${GIT_COMMIT_SHORT}"
+        
+        // Product Architecture Paths
+        PRODUCT_DIR = 'product'
+        PROJECT_DIR = "${PRODUCT_DIR}/${params.PROJECT}"
+        SHARED_DIR = "${PRODUCT_DIR}/shared"
+        
+        // Security Configuration
+        PRODUCTION_SERVER = 'localhost'
+        HEALTH_CHECK_URL = "http://localhost:8081/health"
+    }
+    
+    stages {
+        stage('环境检查') {
+            steps {
+                script {
+                    echo "🔍 检查构建环境..."
+                    echo "项目: ${params.PROJECT}"
+                    echo "分支: ${params.BRANCH_INFO}"
+                    echo "构建号: ${BUILD_NUMBER}"
+                    echo "Git提交: ${GIT_COMMIT_SHORT}"
+                    echo "项目目录: ${PROJECT_DIR}"
+                    
+                    // 检查项目目录是否存在
+                    if (!fileExists("${PROJECT_DIR}")) {
+                        error("❌ 项目目录不存在: ${PROJECT_DIR}")
+                    }
+                    
+                    // 检查docker-compose文件
+                    if (!fileExists("${PROJECT_DIR}/docker-compose.yml")) {
+                        error("❌ docker-compose.yml文件不存在: ${PROJECT_DIR}/docker-compose.yml")
+                    }
+                    
+                    echo "✅ 环境检查通过"
+                }
+            }
+        }
+        
+        stage('代码检出') {
+            steps {
+                script {
+                    echo "📥 检出代码..."
+                    checkout scm
+                    
+                    // 验证项目结构
+                    sh """
+                        echo "验证product目录结构..."
+                        ls -la ${PRODUCT_DIR}/
+                        echo "验证项目目录..."
+                        ls -la ${PROJECT_DIR}/
+                        echo "验证共享资源目录..."
+                        ls -la ${SHARED_DIR}/
+                    """
+                }
+            }
+        }
+        
+        stage('依赖安装') {
+            steps {
+                script {
+                    echo "📦 安装项目依赖..."
+                    dir("${PROJECT_DIR}") {
+                        sh """
+                            echo "当前目录: \$(pwd)"
+                            if [ -f package.json ]; then
+                                echo "安装Node.js依赖..."
+                                npm ci --production=false
+                            else
+                                echo "⚠️ 未找到package.json文件"
+                            fi
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('代码测试') {
+            steps {
+                script {
+                    echo "🧪 运行代码测试..."
+                    dir("${PROJECT_DIR}") {
+                        sh """
+                            if [ -f package.json ] && npm run | grep -q "test"; then
+                                echo "运行测试套件..."
+                                npm test
+                            else
+                                echo "⚠️ 未配置测试脚本，跳过测试阶段"
+                            fi
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('构建Docker镜像') {
+            steps {
+                script {
+                    echo "🐳 构建Docker镜像..."
+                    dir("${PROJECT_DIR}") {
+                        sh """
+                            echo "构建镜像: ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${APP_NAME}:${DOCKER_TAG}"
+                            docker build -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${APP_NAME}:${DOCKER_TAG} .
+                            docker tag ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${APP_NAME}:${DOCKER_TAG} ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${APP_NAME}:latest
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('推送镜像') {
+            steps {
+                script {
+                    echo "📤 推送Docker镜像到阿里云ACR..."
+                    withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh """
+                            echo "登录阿里云ACR..."
+                            echo \$DOCKER_PASSWORD | docker login --username \$DOCKER_USERNAME --password-stdin ${DOCKER_REGISTRY}
+                            
+                            echo "推送镜像..."
+                            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${APP_NAME}:${DOCKER_TAG}
+                            docker push ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${APP_NAME}:latest
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('部署确认') {
+            when {
+                expression { params.CONFIRM_PRODUCTION_DEPLOY == true }
+            }
+            steps {
+                script {
+                    echo "⚠️ 生产环境部署确认..."
+                    timeout(time: 5, unit: 'MINUTES') {
+                        input message: '确认部署到生产环境？', ok: '确认部署',
+                              submitterParameter: 'DEPLOYER'
+                    }
+                    echo "✅ 部署已确认，执行人: ${env.DEPLOYER}"
+                }
+            }
+        }
+        
+        stage('部署应用') {
+            steps {
+                script {
+                    echo "🚀 部署应用到生产环境..."
+                    dir("${PROJECT_DIR}") {
+                        sh """
+                            echo "停止现有容器..."
+                            docker-compose down || true
+                            
+                            echo "清理旧镜像..."
+                            docker image prune -f || true
+                            
+                            echo "启动新版本..."
+                            export DOCKER_TAG=${DOCKER_TAG}
+                            docker-compose up -d
+                            
+                            echo "等待服务启动..."
+                            sleep 30
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('健康检查') {
+            steps {
+                script {
+                    echo "🏥 执行应用健康检查..."
+                    retry(3) {
+                        sh """
+                            echo "检查应用健康状态..."
+                            curl -f ${HEALTH_CHECK_URL} || exit 1
+                            echo "✅ 应用健康检查通过"
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('清理资源') {
+            steps {
+                script {
+                    echo "🧹 清理构建资源..."
+                    sh """
+                        echo "清理Docker构建缓存..."
+                        docker system prune -f --volumes || true
+                        
+                        echo "清理旧镜像..."
+                        docker images | grep ${APP_NAME} | grep -v latest | grep -v ${DOCKER_TAG} | awk '{print \$3}' | xargs -r docker rmi || true
+                    """
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            script {
+                echo "📊 构建完成，清理工作空间..."
+                cleanWs()
+            }
+        }
+        success {
+            script {
+                echo "✅ 构建成功！"
+                echo "项目: ${params.PROJECT}"
+                echo "版本: ${DOCKER_TAG}"
+                echo "部署策略: ${params.DEPLOY_STRATEGY}"
+            }
+        }
+        failure {
+            script {
+                echo "❌ 构建失败！"
+                echo "请检查构建日志并修复问题"
+            }
+        }
+    }
+}

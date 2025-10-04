@@ -1,0 +1,102 @@
+#!/usr/bin/expect -f
+
+# 删除navicat用户并深入诊断MySQL连接问题
+set timeout 30
+
+# 连接到远程服务器
+spawn ssh root@60.205.0.185
+expect {
+    "password:" {
+        send "han0419/\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "# " {
+        puts "SSH连接成功"
+    }
+}
+
+# 1. 删除navicat用户
+puts "\n=== 删除navicat用户 ==="
+send "docker exec -it docker-mysql mysql -uroot -phan0419/ -e \"DROP USER IF EXISTS 'navicat'@'%';\"\r"
+expect "# "
+puts "navicat用户已删除"
+
+# 2. 检查当前MySQL用户列表
+puts "\n=== 检查当前MySQL用户列表 ==="
+send "docker exec -it docker-mysql mysql -uroot -phan0419/ -e \"SELECT user, host, authentication_string FROM mysql.user;\"\r"
+expect "# "
+
+# 3. 检查MySQL错误日志
+puts "\n=== 检查MySQL错误日志 ==="
+send "docker logs docker-mysql --tail 100 2>&1 | grep -i error\r"
+expect "# "
+
+# 4. 检查MySQL连接日志
+puts "\n=== 检查MySQL连接日志 ==="
+send "docker logs docker-mysql --tail 50 2>&1 | grep -i 'connect\\|access\\|denied'\r"
+expect "# "
+
+# 5. 测试从服务器本地连接MySQL
+puts "\n=== 测试服务器本地MySQL连接 ==="
+send "docker exec -it docker-mysql mysql -uroot -phan0419/ -e \"SELECT 'Local connection test successful' as status;\"\r"
+expect "# "
+
+# 6. 检查MySQL配置中的bind-address
+puts "\n=== 检查MySQL bind-address配置 ==="
+send "docker exec -it docker-mysql mysql -uroot -phan0419/ -e \"SHOW VARIABLES LIKE 'bind_address';\"\r"
+expect "# "
+
+# 7. 检查MySQL端口配置
+puts "\n=== 检查MySQL端口配置 ==="
+send "docker exec -it docker-mysql mysql -uroot -phan0419/ -e \"SHOW VARIABLES LIKE 'port';\"\r"
+expect "# "
+
+# 8. 检查容器网络配置
+puts "\n=== 检查容器网络配置 ==="
+send "docker inspect docker-mysql | grep -A 10 -B 5 'NetworkMode\\|IPAddress\\|Ports'\r"
+expect "# "
+
+# 9. 从外部测试端口连通性
+puts "\n=== 测试端口3306连通性 ==="
+send "telnet 60.205.0.185 3306\r"
+expect {
+    "Connected" {
+        puts "端口3306可连接"
+        send "\x1d"
+        expect "telnet>"
+        send "quit\r"
+        expect "# "
+    }
+    "Connection refused" {
+        puts "端口3306连接被拒绝"
+        expect "# "
+    }
+    timeout {
+        puts "端口3306连接超时"
+        send "\x03"
+        expect "# "
+    }
+}
+
+# 10. 检查防火墙状态
+puts "\n=== 检查防火墙状态 ==="
+send "iptables -L -n | grep 3306\r"
+expect "# "
+
+# 11. 检查系统资源使用情况
+puts "\n=== 检查系统资源使用情况 ==="
+send "free -h && df -h\r"
+expect "# "
+
+# 12. 最后尝试一次完整的MySQL连接测试
+puts "\n=== 最终MySQL连接测试 ==="
+send "docker exec -it docker-mysql mysql -uroot -phan0419/ -e \"SELECT USER(), CONNECTION_ID(), NOW() as current_time;\"\r"
+expect "# "
+
+puts "\n=== 诊断完成 ==="
+send "exit\r"
+expect eof

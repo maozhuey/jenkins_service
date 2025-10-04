@@ -1,8 +1,6 @@
 # 阿里云ECS部署配置
 # TBK Development Environment - Aliyun ECS Deployment Configuration
 
-version: '3.8'
-
 services:
   # TBK应用服务 - 从阿里云ACR拉取Jenkins构建的镜像
   tbk-production:
@@ -11,15 +9,14 @@ services:
     container_name: tbk-production
     pull_policy: always
     restart: unless-stopped
-    ports:
-      - "80:3000"
-      - "443:3000"
+    expose:
+      - "3000"
     environment:
       - NODE_ENV=production
-      - DB_HOST=60.205.0.185
-      - DB_USER=peach_wiki
-      - DB_PASSWORD=han0419/
-      - DB_NAME=peach_wiki
+      - DB_HOST=tbk-mysql
+      - DB_USER=tbk
+      - DB_PASSWORD=tbk123
+      - DB_NAME=tbk
       - DB_PORT=3306
       - REDIS_PASSWORD=han0419
       - PUBLIC_ACCESS=true
@@ -33,6 +30,7 @@ services:
       - ./ssl:/app/ssl:ro
     networks:
       - tbk-production-network
+      - tbk_app-network
     depends_on:
       - redis-production
     healthcheck:
@@ -123,3 +121,5 @@ networks:
     ipam:
       config:
         - subnet: 172.20.0.0/16
+  tbk_app-network:
+    external: true

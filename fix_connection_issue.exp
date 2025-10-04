@@ -1,0 +1,148 @@
+#!/usr/bin/expect -f
+
+# MySQL连接问题修复脚本
+set timeout 30
+set server_ip "60.205.0.185"
+set password "han0419/"
+
+puts "=== MySQL连接问题修复开始 ==="
+
+# 连接到远程服务器
+spawn ssh root@$server_ip
+expect {
+    "password:" {
+        send "$password\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "# " {
+        puts "✅ SSH连接成功"
+    }
+    timeout {
+        puts "❌ SSH连接超时"
+        exit 1
+    }
+}
+
+# 1. 重启MySQL容器以清理所有连接
+puts "\n=== 1. 重启MySQL容器清理连接 ==="
+send "docker restart docker-mysql\r"
+expect "# "
+
+# 等待容器完全启动
+puts "等待MySQL容器完全启动..."
+send "sleep 15\r"
+expect "# "
+
+# 2. 验证容器状态
+puts "\n=== 2. 验证容器状态 ==="
+send "docker ps | grep docker-mysql\r"
+expect "# "
+
+# 3. 进入MySQL优化连接配置
+puts "\n=== 3. 优化MySQL连接配置 ==="
+send "docker exec -it docker-mysql mysql -uroot -p$password\r"
+expect {
+    "mysql>" {
+        puts "✅ MySQL连接成功，开始优化配置"
+        
+        # 设置连接超时参数
+        send "SET GLOBAL wait_timeout = 28800;\r"
+        expect "mysql>"
+        
+        send "SET GLOBAL interactive_timeout = 28800;\r"
+        expect "mysql>"
+        
+        send "SET GLOBAL connect_timeout = 60;\r"
+        expect "mysql>"
+        
+        # 增加最大连接数
+        send "SET GLOBAL max_connections = 200;\r"
+        expect "mysql>"
+        
+        # 查看当前连接状态
+        send "SHOW STATUS LIKE 'Threads_connected';\r"
+        expect "mysql>"
+        
+        # 查看配置是否生效
+        send "SHOW VARIABLES LIKE '%timeout%';\r"
+        expect "mysql>"
+        
+        # 杀死可能存在的僵尸连接（除了当前连接）
+        send "SELECT CONCAT('KILL ', id, ';') AS kill_command FROM INFORMATION_SCHEMA.PROCESSLIST WHERE USER = 'root' AND ID != CONNECTION_ID() AND TIME > 300;\r"
+        expect "mysql>"
+        
+        send "exit\r"
+        expect "# "
+    }
+    "Access denied" {
+        puts "❌ MySQL连接失败"
+        exit 1
+    }
+    timeout {
+        puts "❌ MySQL连接超时"
+        exit 1
+    }
+}
+
+# 4. 测试新连接
+puts "\n=== 4. 测试新连接 ==="
+send "docker exec docker-mysql mysql -uroot -p$password -e \"SELECT 'Connection test successful' as status, NOW() as timestamp;\"\r"
+expect "# "
+
+# 5. 检查端口监听状态
+puts "\n=== 5. 检查端口监听状态 ==="
+send "netstat -tlnp | grep 3306\r"
+expect "# "
+
+# 6. 创建专门的Navicat用户（避免root用户冲突）
+puts "\n=== 6. 创建专门的Navicat用户 ==="
+send "docker exec -it docker-mysql mysql -uroot -p$password\r"
+expect {
+    "mysql>" {
+        # 创建navicat专用用户
+        send "DROP USER IF EXISTS 'navicat'@'%';\r"
+        expect "mysql>"
+        
+        send "CREATE USER 'navicat'@'%' IDENTIFIED WITH mysql_native_password BY '$password';\r"
+        expect "mysql>"
+        
+        send "GRANT ALL PRIVILEGES ON *.* TO 'navicat'@'%' WITH GRANT OPTION;\r"
+        expect "mysql>"
+        
+        send "FLUSH PRIVILEGES;\r"
+        expect "mysql>"
+        
+        # 验证新用户
+        send "SELECT user, host FROM mysql.user WHERE user='navicat';\r"
+        expect "mysql>"
+        
+        send "exit\r"
+        expect "# "
+    }
+}
+
+# 7. 测试navicat用户连接
+puts "\n=== 7. 测试navicat用户连接 ==="
+send "docker exec docker-mysql mysql -unavicat -p$password -e \"SELECT 'Navicat user connection successful' as status;\"\r"
+expect "# "
+
+puts "\n=== 修复完成 ==="
+puts "建议使用以下连接信息："
+puts "方案1 - Root用户:"
+puts "  服务器: 60.205.0.185"
+puts "  端口: 3306"
+puts "  用户名: root"
+puts "  密码: han0419/"
+puts ""
+puts "方案2 - Navicat专用用户:"
+puts "  服务器: 60.205.0.185"
+puts "  端口: 3306"
+puts "  用户名: navicat"
+puts "  密码: han0419/"
+
+send "exit\r"
+expect eof

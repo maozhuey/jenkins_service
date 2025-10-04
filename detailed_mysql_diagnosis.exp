@@ -1,0 +1,91 @@
+#!/usr/bin/expect -f
+
+# 详细诊断MySQL连接问题
+set timeout 30
+
+# 连接到远程服务器
+spawn ssh root@60.205.0.185
+expect {
+    "password:" {
+        send "han0419/\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "# " {
+        puts "SSH连接成功"
+    }
+}
+
+# 1. 检查MySQL bind-address配置
+puts "\n=== 1. 检查MySQL bind-address配置 ==="
+send "docker exec -it docker-mysql mysql -uroot -phan0419/ -e \"SHOW VARIABLES LIKE 'bind_address';\"\r"
+expect "# "
+
+# 2. 检查MySQL端口配置
+puts "\n=== 2. 检查MySQL端口配置 ==="
+send "docker exec -it docker-mysql mysql -uroot -phan0419/ -e \"SHOW VARIABLES LIKE 'port';\"\r"
+expect "# "
+
+# 3. 检查容器端口映射
+puts "\n=== 3. 检查容器端口映射 ==="
+send "docker port docker-mysql\r"
+expect "# "
+
+# 4. 检查容器网络详情
+puts "\n=== 4. 检查容器网络详情 ==="
+send "docker inspect docker-mysql | grep -A 5 -B 5 'IPAddress\\|Ports'\r"
+expect "# "
+
+# 5. 测试telnet连接
+puts "\n=== 5. 测试telnet连接到3306端口 ==="
+send "timeout 5 telnet localhost 3306\r"
+expect {
+    "Connected" {
+        puts "本地telnet连接成功"
+        send "\x1d"
+        expect "telnet>"
+        send "quit\r"
+        expect "# "
+    }
+    "Connection refused" {
+        puts "本地telnet连接被拒绝"
+        expect "# "
+    }
+    timeout {
+        puts "本地telnet连接超时"
+        send "\x03"
+        expect "# "
+    }
+}
+
+# 6. 检查netstat端口监听
+puts "\n=== 6. 检查端口监听状态 ==="
+send "netstat -tlnp | grep 3306\r"
+expect "# "
+
+# 7. 检查MySQL进程状态
+puts "\n=== 7. 检查MySQL进程状态 ==="
+send "docker exec -it docker-mysql mysql -uroot -phan0419/ -e \"SHOW PROCESSLIST;\"\r"
+expect "# "
+
+# 8. 检查MySQL状态变量
+puts "\n=== 8. 检查MySQL连接状态 ==="
+send "docker exec -it docker-mysql mysql -uroot -phan0419/ -e \"SHOW STATUS LIKE '%connect%';\"\r"
+expect "# "
+
+# 9. 检查MySQL错误日志最新内容
+puts "\n=== 9. 检查MySQL错误日志 ==="
+send "docker logs docker-mysql --tail 20 2>&1\r"
+expect "# "
+
+# 10. 测试从外部IP连接
+puts "\n=== 10. 测试从容器内连接外部IP ==="
+send "docker exec -it docker-mysql mysql -uroot -phan0419/ -h 60.205.0.185 -e \"SELECT 'External IP connection test' as result;\"\r"
+expect "# "
+
+puts "\n=== 诊断完成 ==="
+send "exit\r"
+expect eof

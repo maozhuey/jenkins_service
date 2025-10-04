@@ -1,0 +1,65 @@
+#!/usr/bin/expect -f
+
+# 重命名MySQL容器从tbk-mysql到docker-mysql
+
+set timeout 60
+set server_ip "60.205.0.185"
+set server_user "root"
+set server_password "han0419/"
+
+# 连接到远程服务器
+spawn sshpass -p $server_password ssh -o StrictHostKeyChecking=no $server_user@$server_ip
+
+expect {
+    "*]#" {
+        send_user "\n=== 已连接到远程服务器 ===\n"
+    }
+    timeout {
+        send_user "\n连接服务器超时\n"
+        exit 1
+    }
+}
+
+# 检查当前容器状态
+send_user "\n=== 检查当前容器状态 ===\n"
+send "docker ps | grep tbk-mysql\r"
+expect "*]#"
+
+# 停止tbk-mysql容器
+send_user "\n=== 停止tbk-mysql容器 ===\n"
+send "docker stop tbk-mysql\r"
+expect "*]#"
+
+# 重命名容器
+send_user "\n=== 重命名容器为docker-mysql ===\n"
+send "docker rename tbk-mysql docker-mysql\r"
+expect "*]#"
+
+# 重新启动容器
+send_user "\n=== 重新启动容器 ===\n"
+send "docker start docker-mysql\r"
+expect "*]#"
+
+# 等待容器启动
+send_user "\n=== 等待容器启动 ===\n"
+send "sleep 10\r"
+expect "*]#"
+
+# 验证容器状态
+send_user "\n=== 验证容器状态 ===\n"
+send "docker ps | grep docker-mysql\r"
+expect "*]#"
+
+# 检查端口监听
+send_user "\n=== 检查端口监听 ===\n"
+send "netstat -tlnp | grep 3306\r"
+expect "*]#"
+
+# 测试MySQL连接
+send_user "\n=== 测试MySQL连接 ===\n"
+send "docker exec docker-mysql mysql -u root -p'han0419/' -e 'SHOW DATABASES;'\r"
+expect "*]#"
+
+send_user "\n=== 容器重命名完成 ===\n"
+send "exit\r"
+expect eof

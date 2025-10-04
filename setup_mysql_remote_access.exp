@@ -1,0 +1,60 @@
+#!/usr/bin/expect -f
+
+# 配置MySQL容器的远程访问权限
+
+set timeout 60
+set server_ip "60.205.0.185"
+set server_user "root"
+set server_password "han0419/"
+
+# 连接到远程服务器
+spawn sshpass -p $server_password ssh -o StrictHostKeyChecking=no $server_user@$server_ip
+
+expect {
+    "*]#" {
+        send_user "\n=== 已连接到远程服务器 ===\n"
+    }
+    timeout {
+        send_user "\n连接服务器超时\n"
+        exit 1
+    }
+}
+
+# 配置root用户的远程访问权限
+send_user "\n=== 配置root用户远程访问权限 ===\n"
+send "docker exec tbk-mysql mysql -u root -p'Han0419@MySQL' -e \"CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY 'han0419/';\"\r"
+expect "*]#"
+
+send "docker exec tbk-mysql mysql -u root -p'Han0419@MySQL' -e \"GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;\"\r"
+expect "*]#"
+
+send "docker exec tbk-mysql mysql -u root -p'Han0419@MySQL' -e \"FLUSH PRIVILEGES;\"\r"
+expect "*]#"
+
+# 创建peach_wiki数据库和用户
+send_user "\n=== 创建peach_wiki数据库和用户 ===\n"
+send "docker exec tbk-mysql mysql -u root -p'Han0419@MySQL' -e \"CREATE DATABASE IF NOT EXISTS peach_wiki;\"\r"
+expect "*]#"
+
+send "docker exec tbk-mysql mysql -u root -p'Han0419@MySQL' -e \"CREATE USER IF NOT EXISTS 'peach_wiki'@'%' IDENTIFIED BY 'han0419/';\"\r"
+expect "*]#"
+
+send "docker exec tbk-mysql mysql -u root -p'Han0419@MySQL' -e \"GRANT ALL PRIVILEGES ON peach_wiki.* TO 'peach_wiki'@'%';\"\r"
+expect "*]#"
+
+send "docker exec tbk-mysql mysql -u root -p'Han0419@MySQL' -e \"FLUSH PRIVILEGES;\"\r"
+expect "*]#"
+
+# 验证用户配置
+send_user "\n=== 验证用户配置 ===\n"
+send "docker exec tbk-mysql mysql -u root -p'Han0419@MySQL' -e \"SELECT user, host FROM mysql.user WHERE user IN ('root', 'peach_wiki');\"\r"
+expect "*]#"
+
+# 测试远程连接
+send_user "\n=== 测试远程连接 ===\n"
+send "docker exec tbk-mysql mysql -u root -p'han0419/' -h 127.0.0.1 -e 'SHOW DATABASES;'\r"
+expect "*]#"
+
+send_user "\n=== MySQL远程访问配置完成 ===\n"
+send "exit\r"
+expect eof
