@@ -14,10 +14,11 @@ services:
     environment:
       - NODE_ENV=production
       - DB_HOST=tbk-mysql
-      - DB_USER=tbk
-      - DB_PASSWORD=tbk123
+      - DB_USER=tbk_admin
+      - DB_PASSWORD=Han0419@MySQL
       - DB_NAME=tbk
       - DB_PORT=3306
+      - REDIS_HOST=redis-production
       - REDIS_PASSWORD=han0419
       - PUBLIC_ACCESS=true
       - TRUST_PROXY=true
@@ -28,6 +29,8 @@ services:
       - ./logs:/app/logs
       - ./uploads:/app/uploads
       - ./ssl:/app/ssl:ro
+      - ./.env.production:/app/.env.prod:ro
+      - ./server.js:/app/server.js:ro
     networks:
       - tbk-production-network
       - tbk_app-network

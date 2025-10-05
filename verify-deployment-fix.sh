@@ -63,6 +63,29 @@ else
     echo "⚠️  健康检查配置缺失"
 fi
 
+# 7. 检查 Jenkinsfile 中的安全清理规则
+echo "7. 检查Jenkinsfile安全清理规则..."
+if grep -q 'docker network prune -f --filter "label!=external"' Jenkinsfile.aliyun; then
+    echo "✅ Jenkinsfile 使用安全的 prune 规则"
+else
+    echo "❌ Jenkinsfile 未使用安全 prune 规则"
+    exit 1
+fi
+
+# 8. 检查外部网络存在与标签
+echo "8. 检查外部网络标签..."
+if docker network ls --format '{{.Name}}' | grep -q '^tbk_app-network$'; then
+    label=$(docker network inspect tbk_app-network --format '{{index .Labels "external"}}' || true)
+    if [ "$label" = "true" ]; then
+        echo "✅ tbk_app-network 已设置 external=true 标签"
+    else
+        echo "⚠️  tbk_app-network 未设置 external=true 标签"
+    fi
+else
+    echo "❌ 未找到 tbk_app-network 外部网络"
+    exit 1
+fi
+
 echo ""
 echo "🎉 部署配置验证完成！"
 echo ""

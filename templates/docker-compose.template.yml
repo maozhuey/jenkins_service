@@ -1,0 +1,84 @@
+# Docker Compose 动态配置模板
+# 使用envsubst工具动态生成docker-compose.yml
+
+services:
+  # TBK应用服务 - 动态配置版本
+  ${SERVICE_NAME:-tbk-production}:
+    image: ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG:-latest}
+    platform: ${PLATFORM:-linux/amd64}
+    container_name: ${CONTAINER_NAME:-tbk-production}
+    pull_policy: always
+    restart: unless-stopped
+    expose:
+      - "${SERVICE_PORT:-3000}"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - DB_HOST=${DB_HOST:-tbk-mysql}
+      - DB_USER=${DB_USER:-tbk_admin}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME:-tbk}
+      - DB_PORT=${DB_PORT:-3306}
+      - REDIS_HOST=${REDIS_HOST:-tbk-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    networks:
+      - ${NETWORK_NAME:-tbk_app-network}
+    volumes:
+      - ${LOG_VOLUME:-./logs}:/app/logs
+      - ${CONFIG_VOLUME:-./config}:/app/config:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${SERVICE_PORT:-3000}/health"]
+      interval: ${HEALTH_CHECK_INTERVAL:-30s}
+      timeout: ${HEALTH_CHECK_TIMEOUT:-10s}
+      retries: ${HEALTH_CHECK_RETRIES:-3}
+      start_period: ${HEALTH_CHECK_START_PERIOD:-40s}
+    deploy:
+      resources:
+        limits:
+          cpus: '${CPU_LIMIT:-1.0}'
+          memory: ${MEMORY_LIMIT:-1G}
+        reservations:
+          cpus: '${CPU_RESERVATION:-0.5}'
+          memory: ${MEMORY_RESERVATION:-512M}
+
+  # Nginx反向代理 - 动态配置版本
+  ${NGINX_SERVICE_NAME:-tbk-nginx}:
+    image: ${NGINX_IMAGE:-nginx:alpine}
+    container_name: ${NGINX_CONTAINER_NAME:-tbk-nginx}
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ${NGINX_CONFIG_PATH:-./nginx/nginx.conf}:/etc/nginx/nginx.conf:ro
+      - ${SSL_CERT_PATH:-./ssl}:/etc/nginx/ssl:ro
+      - ${NGINX_LOG_PATH:-./nginx/logs}:/var/log/nginx
+    networks:
+      - ${NETWORK_NAME:-tbk_app-network}
+    depends_on:
+      - ${SERVICE_NAME:-tbk-production}
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: ${NGINX_HEALTH_INTERVAL:-30s}
+      timeout: ${NGINX_HEALTH_TIMEOUT:-5s}
+      retries: ${NGINX_HEALTH_RETRIES:-3}
+
+networks:
+  ${NETWORK_NAME:-tbk_app-network}:
+    external: true
+    name: ${NETWORK_NAME:-tbk_app-network}
+
+volumes:
+  ${LOG_VOLUME_NAME:-tbk-logs}:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${LOG_VOLUME_PATH:-./logs}
+  
+  ${CONFIG_VOLUME_NAME:-tbk-config}:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${CONFIG_VOLUME_PATH:-./config}
