@@ -675,6 +675,28 @@ env.GIT_BRANCH_NAME = branchName
 
 ## 修复记录
 
+### 修复7: 禁用Jenkins自动构建机制
+- **修复时间**: 2025-10-06 20:19:00
+- **问题标题**: 需要禁用Jenkins自动构建，改为仅手动触发
+- **问题描述**: 用户希望去掉Jenkins的自动构建机制，只保留手动触发构建功能
+- **深度分析过程**: 
+  1. 检查Jenkins tbk-pipeline项目的config.xml配置文件
+  2. 发现配置中有SCM触发器设置为每2分钟检查一次代码变更(H/2 * * * *)
+  3. 需要移除所有自动触发相关的配置
+- **发现的根本问题**: Jenkins配置中包含SCM polling触发器，会自动检测代码变更并触发构建
+- **问题的根本原因**: 之前为了实现自动化CI/CD而配置的SCM触发器
+- **问题对应的解决方案**: 
+  1. 修改jenkins_home/jobs/tbk-pipeline/config.xml文件
+  2. 移除DeclarativeJobPropertyTrackerAction中的triggers配置
+  3. 移除PipelineTriggersJobProperty整个配置块
+  4. 更新项目描述，说明已改为手动触发
+  5. 重启Jenkins容器加载新配置
+  6. 验证自动触发功能已禁用，只能手动触发构建
+
+---
+
+## 修复记录
+
 ### 修复1: 配置Jenkins自动触发构建
 - **修复时间**: 2025-10-06 19:30:00
 - **问题标题**: Jenkins构建无法自动触发，需要手动触发

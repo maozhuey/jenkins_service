@@ -4,12 +4,8 @@
     <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@2.2273.v643f36ed9e94"/>
     <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@2.2273.v643f36ed9e94">
       <jobProperties/>
-      <triggers>
-         <hudson.triggers.SCMTrigger>
-           <spec>H/2 * * * *</spec>
-           <ignorePostCommitHooks>false</ignorePostCommitHooks>
-         </hudson.triggers.SCMTrigger>
-       </triggers>
+      <triggers/>
+       
       <parameters>
         <string>PROJECT</string>
         <string>AUTO_DEPLOY_ENABLED</string>
@@ -24,17 +20,10 @@
 
 ⚠️ 重要提示：
 1. 仅主分支会执行构建
-2. 构建后会自动部署到生产环境</description>
+2. 构建后会自动部署到生产环境
+3. 已设置为手动触发构建，不会自动检测代码变更</description>
   <keepDependencies>false</keepDependencies>
   <properties>
-    <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
-      <triggers>
-        <hudson.triggers.SCMTrigger>
-          <spec>H/2 * * * *</spec>
-          <ignorePostCommitHooks>false</ignorePostCommitHooks>
-        </hudson.triggers.SCMTrigger>
-      </triggers>
-    </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
     <hudson.model.ParametersDefinitionProperty>
       <parameterDefinitions>
         <hudson.model.StringParameterDefinition>
