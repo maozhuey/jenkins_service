@@ -17,6 +17,7 @@ jenkins_home/.ssh/
 # Logs
 logs/
 *.log
+.gitignore
 
 # Temporary files
 *.tmp
