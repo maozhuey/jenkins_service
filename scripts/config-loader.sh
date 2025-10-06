@@ -17,6 +17,18 @@ else
     CONFIG_FILE="$PROJECT_ROOT/config/network.conf"
 fi
 
+# 兼容性回退：如果默认路径不存在，尝试常见的部署目录
+if [[ ! -f "$CONFIG_FILE" ]]; then
+    for candidate in \
+        "/opt/apps/tbk/config/network.conf" \
+        "/opt/apps/config/network.conf"; do
+        if [[ -f "$candidate" ]]; then
+            CONFIG_FILE="$candidate"
+            break
+        fi
+    done
+fi
+
 # 加载网络配置的函数
 load_network_config() {
     if [[ ! -f "$CONFIG_FILE" ]]; then
