@@ -64,8 +64,8 @@ cleanup_resources() {
     # 清理未使用的容器
     docker container prune -f 2>/dev/null || true
     
-    # 清理未使用的网络
-    docker network prune -f 2>/dev/null || true
+    # 清理未使用的网络（保护外部网络）
+    docker network prune -f --filter "label!=external" 2>/dev/null || true
     
     # 清理未使用的卷（可选，谨慎使用）
     # docker volume prune -f 2>/dev/null || true

@@ -142,8 +142,8 @@ cleanup_containers() {
     # 停止并删除相关容器
     $DOCKER_COMPOSE_CMD -f docker-compose.public.yml down --remove-orphans 2>/dev/null || true
     
-    # 清理未使用的网络
-    docker network prune -f 2>/dev/null || true
+    # 清理未使用的网络（保护外部网络）
+    docker network prune -f --filter "label!=external" 2>/dev/null || true
     
     log_success "Cleanup completed"
 }
