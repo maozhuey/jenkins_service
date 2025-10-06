@@ -459,4 +459,93 @@ tbk_app-network (ID: 40db5fd6fa91) - 已存在
 
 ---
 
+## 修复记录 #2
+**修复时间**: 2025年10月6日 星期一 16时09分46秒 CST
+
+**问题标题**: Jenkins Git仓库配置错误导致网络删除修复无效
+
+**问题描述**: 
+Jenkins作业配置中的Git仓库地址指向错误的仓库，导致所有本地修复的代码无法被Jenkins使用，网络删除问题持续存在。
+
+**深度分析过程**:
+1. 检查.gitignore配置 - 发现所有关键配置文件都已正确提交
+2. 验证环境文件、Jenkinsfile、Docker Compose文件的提交状态 - 均已在版本控制中
+3. 检查部署脚本和修复脚本 - 都已提交
+4. 分析Jenkins作业配置 - 发现Git仓库地址配置错误
+5. 检查Jenkins工作空间 - 确认Jenkins从错误仓库拉取代码
+
+**发现的根本问题**:
+Jenkins作业`tbk-pipeline`的配置文件`config.xml`中，Git仓库URL配置为`git@github.com:maozhuey/jenkins_service.git`，但实际应该指向`git@github.com:maozhuey/tbk.git`
+
+**问题的根本原因**:
+Jenkins配置指向了错误的Git仓库，导致：
+1. Jenkins从jenkins_service仓库拉取代码，而不是tbk项目代码
+2. 所有tbk项目的修复都没有生效，网络清理修复未被应用
+3. 问题持续存在，Jenkins执行的是错误项目的代码
+
+**问题对应的解决方案**:
+1. 修复Jenkins作业配置文件`/Users/hanchanglin/AI编程代码库/jenkins-service/jenkins_home/jobs/tbk-pipeline/config.xml`
+2. 将Git仓库URL从`git@github.com:maozhuey/jenkins_service.git`更新为`git@github.com:maozhuey/tbk.git`
+3. 重启Jenkins容器使新配置生效
+4. 验证Jenkins现在使用正确的tbk项目仓库
+
+## 修复记录 #3
+**修复时间**: 2025年10月6日 星期一 16时15分39秒 CST
+
+**问题标题**: 最终确认并修复Jenkins Git仓库配置
+
+**问题描述**: 
+经过重新分析，确认Jenkins作业`tbk-pipeline`应该指向tbk项目仓库，而不是jenkins-service仓库。
+
+**深度分析过程**:
+1. 重新检查当前工作目录和Git配置
+2. 确认tbk项目的正确仓库地址：`git@github.com:maozhuey/tbk.git`
+3. 发现之前的修复方向错误，Jenkins应该指向tbk项目而不是jenkins-service项目
+
+**发现的根本问题**:
+Jenkins作业`tbk-pipeline`用于部署tbk项目，但配置指向了jenkins-service仓库
+
+**问题的根本原因**:
+配置混乱导致Jenkins从错误的项目仓库拉取代码
+
+**问题对应的解决方案**:
+1. 将Jenkins配置中的Git仓库URL正确设置为`git@github.com:maozhuey/tbk.git`
+2. 重启Jenkins容器应用配置
+3. 现在Jenkins将从正确的tbk项目仓库拉取代码和Jenkinsfile
+
+## 修复记录 #4
+**修复时间**: 2025年10月6日 星期一 16时21分57秒 CST
+
+**问题标题**: 发现并解决代码同步问题 - 网络修复未同步到tbk项目
+
+**问题描述**: 
+用户敏锐地发现，虽然Jenkins配置已指向正确的tbk仓库，但之前的网络清理修复都是在jenkins-service项目中进行的，而tbk项目中的Jenkinsfile.aliyun并没有包含这些修复。
+
+**深度分析过程**:
+1. 检查tbk项目中是否存在Jenkinsfile.aliyun文件 - 确认存在
+2. 对比jenkins-service和tbk项目中的网络清理命令
+3. 发现关键差异：
+   - jenkins-service项目：`docker network prune -f --filter "label!=external" || true`（已修复）
+   - tbk项目：`docker network prune -f || true`（未修复）
+
+**发现的根本问题**:
+所有网络清理修复都在jenkins-service项目中完成，但Jenkins实际从tbk项目拉取代码，导致修复未生效
+
+**问题的根本原因**:
+代码同步问题 - 修复在错误的项目中进行，实际部署使用的项目没有包含修复
+
+**问题对应的解决方案**:
+1. 将网络清理修复同步到tbk项目的Jenkinsfile.aliyun
+2. 使用sed命令批量替换所有`docker network prune -f || true`为`docker network prune -f --filter "label!=external" || true`
+3. 提交并推送修复到tbk项目的远程仓库
+4. 确保Jenkins现在能够拉取到包含修复的代码
+
+**验证结果**:
+- ✅ tbk项目中的两处网络清理命令都已添加过滤器
+- ✅ 修复已提交到tbk项目（commit: faf120c）
+- ✅ 修复已推送到远程仓库
+- ✅ Jenkins现在将使用包含修复的Jenkinsfile.aliyun
+
+---
+
 *此文档将持续更新，记录所有修复尝试和结果*
