@@ -336,6 +336,26 @@ pipeline {
                                     echo "❌ WARNING: scripts/ensure_network.sh not found locally!"
                                     exit 1
                                 fi
+                                
+                                # 上传配置加载脚本
+                                if [ -f scripts/config-loader.sh ]; then
+                                    scp -o StrictHostKeyChecking=no scripts/config-loader.sh ${ECS_USER}@${ECS_HOST}:${ECS_DEPLOY_PATH}/config-loader.sh
+                                    ssh -o StrictHostKeyChecking=no ${ECS_USER}@${ECS_HOST} 'chmod +x ${ECS_DEPLOY_PATH}/config-loader.sh'
+                                    echo "✅ config-loader.sh uploaded and made executable"
+                                else
+                                    echo "❌ WARNING: scripts/config-loader.sh not found locally!"
+                                    exit 1
+                                fi
+                                
+                                # 上传config目录
+                                if [ -d config ]; then
+                                    ssh -o StrictHostKeyChecking=no ${ECS_USER}@${ECS_HOST} "mkdir -p ${ECS_DEPLOY_PATH}/config"
+                                    scp -o StrictHostKeyChecking=no -r config/* ${ECS_USER}@${ECS_HOST}:${ECS_DEPLOY_PATH}/config/
+                                    echo "✅ config directory uploaded"
+                                else
+                                    echo "❌ WARNING: config directory not found locally!"
+                                    exit 1
+                                fi
                             """
                             // 通过 SSH 在远端 ECS 执行 docker compose 部署
                             sh """
