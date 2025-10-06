@@ -19,20 +19,34 @@ fi
 
 # 兼容性回退：如果默认路径不存在，尝试常见的部署目录
 if [[ ! -f "$CONFIG_FILE" ]]; then
+    echo "DEBUG: 初始配置文件路径不存在: $CONFIG_FILE" >&2
+    echo "DEBUG: 尝试候选路径..." >&2
     for candidate in \
         "/opt/apps/tbk/config/network.conf" \
         "/opt/apps/config/network.conf"; do
+        echo "DEBUG: 检查候选路径: $candidate" >&2
         if [[ -f "$candidate" ]]; then
+            echo "DEBUG: 找到配置文件: $candidate" >&2
             CONFIG_FILE="$candidate"
             break
+        else
+            echo "DEBUG: 候选路径不存在: $candidate" >&2
         fi
     done
+    echo "DEBUG: 最终配置文件路径: $CONFIG_FILE" >&2
 fi
 
 # 加载网络配置的函数
 load_network_config() {
     if [[ ! -f "$CONFIG_FILE" ]]; then
         echo "错误: 配置文件不存在: $CONFIG_FILE" >&2
+        echo "DEBUG: 当前工作目录: $(pwd)" >&2
+        echo "DEBUG: 脚本目录: $SCRIPT_DIR" >&2
+        echo "DEBUG: 项目根目录: $PROJECT_ROOT" >&2
+        echo "DEBUG: /opt/apps/ 目录内容:" >&2
+        ls -la /opt/apps/ 2>/dev/null || echo "DEBUG: /opt/apps/ 目录不存在" >&2
+        echo "DEBUG: /opt/apps/tbk/ 目录内容:" >&2
+        ls -la /opt/apps/tbk/ 2>/dev/null || echo "DEBUG: /opt/apps/tbk/ 目录不存在" >&2
         return 1
     fi
     
