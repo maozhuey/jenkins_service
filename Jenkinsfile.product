@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     parameters {
-        stringParam(
+        string(
             name: 'PROJECT',
             defaultValue: 'tbk',
             description: '项目标识（product目录下的项目名称）'
@@ -22,7 +22,7 @@ pipeline {
             choices: ['rolling', 'recreate', 'blue-green'],
             description: '部署策略'
         )
-        stringParam(
+        string(
             name: 'BRANCH_INFO',
             defaultValue: 'main (生产环境)',
             description: '构建分支信息'
