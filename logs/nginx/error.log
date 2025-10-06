@@ -1427,3 +1427,5 @@
 2025/10/06 08:04:10 [warn] 2490#2490: the "listen ... http2" directive is deprecated, use the "http2" directive instead in /etc/nginx/conf.d/default.conf:36
 2025/10/06 08:04:40 [warn] 2496#2496: the "listen ... http2" directive is deprecated, use the "http2" directive instead in /etc/nginx/conf.d/default.conf:36
 2025/10/06 08:05:10 [warn] 2501#2501: the "listen ... http2" directive is deprecated, use the "http2" directive instead in /etc/nginx/conf.d/default.conf:36
+2025/10/06 08:05:40 [warn] 2507#2507: the "listen ... http2" directive is deprecated, use the "http2" directive instead in /etc/nginx/conf.d/default.conf:36
+2025/10/06 08:06:10 [warn] 2513#2513: the "listen ... http2" directive is deprecated, use the "http2" directive instead in /etc/nginx/conf.d/default.conf:36
