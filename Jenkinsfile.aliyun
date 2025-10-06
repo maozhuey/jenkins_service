@@ -304,8 +304,15 @@ pipeline {
                                 # 仅当本地存在对应文件时才上传
                                 [ -f ${COMPOSE_FILE_REMOTE} ] && scp -o StrictHostKeyChecking=no ${COMPOSE_FILE_REMOTE} ${ECS_USER}@${ECS_HOST}:${ECS_DEPLOY_PATH}/ || true
                                 [ -f ${ENV_FILE} ] && scp -o StrictHostKeyChecking=no ${ENV_FILE} ${ECS_USER}@${ECS_HOST}:${ECS_DEPLOY_PATH}/ || true
-                                # 上传网络保障脚本
-                                [ -f scripts/ensure_network.sh ] && scp -o StrictHostKeyChecking=no scripts/ensure_network.sh ${ECS_USER}@${ECS_HOST}:${ECS_DEPLOY_PATH}/ensure_network.sh || true
+                                # 上传网络保障脚本并设置执行权限
+                                if [ -f scripts/ensure_network.sh ]; then
+                                    scp -o StrictHostKeyChecking=no scripts/ensure_network.sh ${ECS_USER}@${ECS_HOST}:${ECS_DEPLOY_PATH}/ensure_network.sh
+                                    ssh -o StrictHostKeyChecking=no ${ECS_USER}@${ECS_HOST} 'chmod +x ${ECS_DEPLOY_PATH}/ensure_network.sh'
+                                    echo "✅ ensure_network.sh uploaded and made executable"
+                                else
+                                    echo "❌ WARNING: scripts/ensure_network.sh not found locally!"
+                                    exit 1
+                                fi
                             """
                             // 通过 SSH 在远端 ECS 执行 docker compose 部署
                             sh """
@@ -315,7 +322,15 @@ pipeline {
                                   set -e
                                   cd ${ECS_DEPLOY_PATH}
                                   echo "Pre-flight: ensuring external network exists and labeled..."
-                                  bash ${ECS_DEPLOY_PATH}/ensure_network.sh tbk_app-network 172.22.0.0/16
+                                  if [ -f ${ECS_DEPLOY_PATH}/ensure_network.sh ]; then
+                                      echo "✅ Found ensure_network.sh script, executing..."
+                                      bash ${ECS_DEPLOY_PATH}/ensure_network.sh tbk_app-network 172.21.0.0/16
+                                  else
+                                      echo "❌ ERROR: ensure_network.sh script not found at ${ECS_DEPLOY_PATH}/ensure_network.sh"
+                                      echo "Falling back to manual network creation..."
+                                      docker network prune -f --filter "label!=external" || true
+                                      docker network create tbk_app-network --subnet=172.21.0.0/16 --label external=true || true
+                                  fi
                                   echo "Cleaning up existing containers and networks..."
                                   ENV_ARG=""
                                   if [ -f ${ENV_FILE} ]; then ENV_ARG="--env-file ${ENV_FILE}"; fi
@@ -327,7 +342,7 @@ pipeline {
                                       # 只清理未使用的网络，但保留外部网络
                                       docker network prune -f --filter "label!=external" || true
                                       echo "Ensuring required external networks exist..."
-                                      docker network create tbk_app-network --subnet=172.22.0.0/16 --label external=true || true
+                                      docker network create tbk_app-network --subnet=172.21.0.0/16 --label external=true || true
                                       echo "Pulling latest image..."
                                       docker compose \$ENV_ARG -f ${COMPOSE_FILE_REMOTE} pull tbk-production
                                       echo "Starting services with force recreate..."
@@ -363,7 +378,7 @@ pipeline {
                                       # 只清理未使用的网络，但保留外部网络
                                       docker network prune -f --filter "label!=external" || true
                                       echo "Ensuring required external networks exist..."
-                                       docker network create tbk_app-network --subnet=172.22.0.0/16 --label external=true || true
+                                       docker network create tbk_app-network --subnet=172.21.0.0/16 --label external=true || true
                                       echo "Pulling latest image..."
                                       docker compose \$ENV_ARG -f ${COMPOSE_FILE_REMOTE} pull tbk-production
                                       echo "Starting services (rolling)..."
