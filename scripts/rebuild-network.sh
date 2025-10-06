@@ -33,7 +33,8 @@ echo ""
 # 检查当前网络状态
 echo -e "${BLUE}1. 检查当前网络状态${NC}"
 if docker network ls | grep -q "$NETWORK_NAME"; then
-    current_subnet=$(docker network inspect "$NETWORK_NAME" 2>/dev/null | jq -r '.[0].IPAM.Config[0].Subnet' 2>/dev/null || echo "未知")
+    # 使用 docker inspect --format 提取子网，避免依赖 jq
+    current_subnet=$(docker network inspect "$NETWORK_NAME" --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}' 2>/dev/null || echo "未知")
     echo "当前网络子网: $current_subnet"
     
     if [[ "$current_subnet" == "$CORRECT_SUBNET" ]]; then
@@ -45,19 +46,20 @@ if docker network ls | grep -q "$NETWORK_NAME"; then
     
     # 检查连接的容器
     echo -e "${BLUE}2. 检查连接的容器${NC}"
-    connected_containers=$(docker network inspect "$NETWORK_NAME" | jq -r '.[0].Containers | keys[]' 2>/dev/null || echo "")
+    # 提取连接的容器ID列表（以空格分隔）。当没有容器时输出为空字符串
+    connected_containers=$(docker network inspect "$NETWORK_NAME" --format '{{range $id, $v := .Containers}}{{$id}} {{end}}' 2>/dev/null || echo "")
     
     if [[ -n "$connected_containers" ]]; then
         echo "发现连接的容器:"
         for container_id in $connected_containers; do
-            container_name=$(docker inspect "$container_id" | jq -r '.[0].Name' | sed 's/^\///')
+            container_name=$(docker inspect --format '{{.Name}}' "$container_id" | sed 's/^\///')
             echo "  - $container_name ($container_id)"
         done
         
         # 断开所有容器连接
         echo -e "${BLUE}3. 断开容器连接${NC}"
         for container_id in $connected_containers; do
-            container_name=$(docker inspect "$container_id" | jq -r '.[0].Name' | sed 's/^\///')
+            container_name=$(docker inspect --format '{{.Name}}' "$container_id" | sed 's/^\///')
             echo "断开容器: $container_name"
             docker network disconnect "$NETWORK_NAME" "$container_id" || {
                 echo -e "${YELLOW}⚠️  容器 $container_name 断开失败，可能已断开${NC}"
@@ -90,7 +92,7 @@ echo -e "${GREEN}✅ 新网络已创建${NC}"
 if [[ -n "$connected_containers" ]]; then
     echo -e "${BLUE}6. 重新连接容器${NC}"
     for container_id in $connected_containers; do
-        container_name=$(docker inspect "$container_id" | jq -r '.[0].Name' | sed 's/^\///')
+        container_name=$(docker inspect --format '{{.Name}}' "$container_id" | sed 's/^\///')
         if docker ps -q --filter "id=$container_id" | grep -q .; then
             echo "重新连接容器: $container_name"
             docker network connect "$NETWORK_NAME" "$container_id" || {
@@ -104,7 +106,7 @@ fi
 
 # 验证结果
 echo -e "${BLUE}7. 验证结果${NC}"
-new_subnet=$(docker network inspect "$NETWORK_NAME" | jq -r '.[0].IPAM.Config[0].Subnet')
+new_subnet=$(docker network inspect "$NETWORK_NAME" --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}' 2>/dev/null || echo "")
 if [[ "$new_subnet" == "$CORRECT_SUBNET" ]]; then
     echo -e "${GREEN}🎉 网络重建成功！${NC}"
     echo "网络名称: $NETWORK_NAME"
