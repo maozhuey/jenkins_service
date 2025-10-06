@@ -349,9 +349,16 @@ pipeline {
                                 
                                 # 上传config目录
                                 if [ -d config ]; then
+                                    echo "📁 Found config directory locally, uploading..."
                                     ssh -o StrictHostKeyChecking=no ${ECS_USER}@${ECS_HOST} "mkdir -p ${ECS_DEPLOY_PATH}/config"
-                                    scp -o StrictHostKeyChecking=no -r config/* ${ECS_USER}@${ECS_HOST}:${ECS_DEPLOY_PATH}/config/
-                                    echo "✅ config directory uploaded"
+                                    if scp -o StrictHostKeyChecking=no -r config/* ${ECS_USER}@${ECS_HOST}:${ECS_DEPLOY_PATH}/config/; then
+                                        echo "✅ config directory uploaded successfully"
+                                        # 验证上传的文件
+                                        ssh -o StrictHostKeyChecking=no ${ECS_USER}@${ECS_HOST} "ls -la ${ECS_DEPLOY_PATH}/config/"
+                                    else
+                                        echo "❌ ERROR: Failed to upload config directory!"
+                                        exit 1
+                                    fi
                                 else
                                     echo "❌ WARNING: config directory not found locally!"
                                     exit 1
