@@ -5,43 +5,45 @@
 
 # 获取脚本所在目录的绝对路径
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+echo "DEBUG: SCRIPT_DIR = $SCRIPT_DIR" >&2
 
-echo "DEBUG: 脚本所在目录: $SCRIPT_DIR" >&2
-
-# 智能路径检测：支持本地开发环境和ECS部署环境
-if [[ "$SCRIPT_DIR" == */scripts ]]; then
-    # 本地开发环境：脚本在 scripts/ 子目录中
+# 智能检测配置文件路径
+if [[ "$SCRIPT_DIR" == *"/scripts" ]]; then
+    # 本地开发环境：脚本在scripts目录下
     PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
     CONFIG_FILE="$PROJECT_ROOT/config/network.conf"
-    echo "DEBUG: 检测为本地开发环境" >&2
+    echo "DEBUG: 本地开发环境，PROJECT_ROOT = $PROJECT_ROOT" >&2
+elif [[ "$SCRIPT_DIR" == "/opt/apps/tbk" ]] || [[ "$SCRIPT_DIR" == "/opt/apps" ]]; then
+    # ECS部署环境：脚本直接在部署目录下
+    CONFIG_FILE="/opt/apps/tbk/config/network.conf"
+    echo "DEBUG: ECS部署环境，使用固定路径" >&2
 else
-    # ECS部署环境：脚本直接在项目根目录中
-    PROJECT_ROOT="$SCRIPT_DIR"
-    CONFIG_FILE="$PROJECT_ROOT/config/network.conf"
-    echo "DEBUG: 检测为ECS部署环境" >&2
+    # 其他环境：使用环境变量或默认路径
+    PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+    CONFIG_FILE="${ECS_DEPLOY_PATH:-$PROJECT_ROOT}/config/network.conf"
+    echo "DEBUG: 其他环境，PROJECT_ROOT = $PROJECT_ROOT" >&2
 fi
 
-echo "DEBUG: 项目根目录: $PROJECT_ROOT" >&2
-echo "DEBUG: 初始配置文件路径: $CONFIG_FILE" >&2
+echo "DEBUG: 初始CONFIG_FILE = $CONFIG_FILE" >&2
 
-# 兼容性回退：如果默认路径不存在，尝试常见的部署目录
+# 如果默认路径不存在，尝试候选路径
 if [[ ! -f "$CONFIG_FILE" ]]; then
-    echo "DEBUG: 初始配置文件路径不存在: $CONFIG_FILE" >&2
-    echo "DEBUG: 尝试候选路径..." >&2
+    echo "DEBUG: 默认配置文件不存在，尝试候选路径..." >&2
     for candidate in \
         "/opt/apps/tbk/config/network.conf" \
-        "/opt/apps/config/network.conf"; do
+        "/opt/apps/config/network.conf" \
+        "$SCRIPT_DIR/config/network.conf" \
+        "$(dirname "$SCRIPT_DIR")/config/network.conf"; do
         echo "DEBUG: 检查候选路径: $candidate" >&2
         if [[ -f "$candidate" ]]; then
-            echo "DEBUG: 找到配置文件: $candidate" >&2
             CONFIG_FILE="$candidate"
+            echo "DEBUG: 找到配置文件: $CONFIG_FILE" >&2
             break
-        else
-            echo "DEBUG: 候选路径不存在: $candidate" >&2
         fi
     done
-    echo "DEBUG: 最终配置文件路径: $CONFIG_FILE" >&2
 fi
+
+echo "DEBUG: 最终CONFIG_FILE = $CONFIG_FILE" >&2
 
 # 加载网络配置的函数
 load_network_config() {

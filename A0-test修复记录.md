@@ -1003,3 +1003,15 @@ commit 3d34e92
 **问题的根本原因**: workspace缓存问题导致Jenkins没有正确拉取最新的代码更改
 **问题对应的解决方案**: 强制清理workspace并重新构建以验证最新的调试代码是否生效
 **验证结果**: 等待新构建验证修复效果
+
+---
+
+## 修复记录 #7
+**修复时间**: 2025-01-06 23:45:00
+**问题标题**: 修复ECS环境中配置文件路径检测错误
+**问题描述**: 在ECS环境中，config-loader.sh脚本错误地查找配置文件路径/opt/apps/config/network.conf，实际应为/opt/apps/tbk/config/network.conf
+**深度分析过程**: 通过分析Jenkins部署脚本和错误日志，发现在ECS环境中脚本被直接上传到/opt/apps/tbk/目录，而不是/opt/apps/tbk/scripts/目录，导致PROJECT_ROOT计算为/opt/apps而不是/opt/apps/tbk
+**发现的根本问题**: 配置文件路径计算逻辑在ECS环境中有误，错误地查找/opt/apps/config/network.conf而不是/opt/apps/tbk/config/network.conf
+**问题的根本原因**: 脚本路径检测逻辑没有考虑ECS部署时脚本直接放在部署目录的情况
+**问题对应的解决方案**: 增强config-loader.sh的路径检测逻辑，针对ECS环境使用固定的配置文件路径/opt/apps/tbk/config/network.conf
+**验证结果**: 修复已提交并推送到仓库
