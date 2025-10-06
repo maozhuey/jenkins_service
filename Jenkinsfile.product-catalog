@@ -90,28 +90,46 @@ pipeline {
         stage('后端构建') {
             steps {
                 echo '⚙️ 构建后端服务...'
-                dir('backend') {
-                    sh 'npm install --production'
-                    sh 'npm test || echo "跳过测试步骤"'
+                script {
+                    // 检查是否存在package.json文件
+                    if (fileExists('package.json')) {
+                        sh 'npm install --production'
+                        sh 'npm test || echo "跳过测试步骤"'
+                    } else {
+                        echo '跳过后端构建步骤 - 未找到package.json'
+                    }
                 }
             }
         }
         
         stage('Docker镜像构建') {
-            parallel {
-                stage('构建前端镜像') {
-                    steps {
-                        echo '🐳 构建前端Docker镜像 (多架构支持)...'
-                        dir('frontend') {
+            steps {
+                echo '🐳 初始化Docker buildx环境...'
+                script {
+                    // 先统一初始化buildx环境，避免并行冲突
+                    sh """
+                        # 清理可能存在的builder
+                        docker buildx rm multiarch-builder || true
+                        
+                        # 创建新的builder
+                        docker buildx create --use --name multiarch-builder --driver docker-container
+                        
+                        # 启动builder
+                        docker buildx inspect --bootstrap
+                    """
+                }
+                
+                // 串行构建，避免资源冲突
+                parallel {
+                    stage('构建前端镜像') {
+                        steps {
+                            echo '🎨 构建前端Docker镜像 (AMD64架构)...'
                             script {
-                                // 使用buildx进行多架构构建，支持AMD64和ARM64
                                 docker.withRegistry("https://${DOCKER_REGISTRY}", 'aliyun-acr') {
                                     sh """
-                                        # 确保buildx可用
-                                        docker buildx create --use --name multiarch-builder || docker buildx use multiarch-builder
-                                        
-                                        # 构建并推送多架构镜像
-                                        docker buildx build --platform linux/amd64,linux/arm64 \
+                                        # 只构建AMD64架构，避免资源冲突，使用根目录的Dockerfile.frontend
+                                        docker buildx build --platform linux/amd64 \
+                                            -f Dockerfile.frontend \
                                             -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${DOCKER_IMAGE}-frontend:${FULL_DOCKER_TAG} \
                                             -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${DOCKER_IMAGE}-frontend:latest \
                                             --push .
@@ -120,20 +138,15 @@ pipeline {
                             }
                         }
                     }
-                }
-                stage('构建后端镜像') {
-                    steps {
-                        echo '🐳 构建后端Docker镜像 (多架构支持)...'
-                        dir('backend') {
+                    stage('构建后端镜像') {
+                        steps {
+                            echo '⚙️ 构建后端Docker镜像 (AMD64架构)...'
                             script {
-                                // 使用buildx进行多架构构建，支持AMD64和ARM64
                                 docker.withRegistry("https://${DOCKER_REGISTRY}", 'aliyun-acr') {
                                     sh """
-                                        # 确保buildx可用
-                                        docker buildx create --use --name multiarch-builder || docker buildx use multiarch-builder
-                                        
-                                        # 构建并推送多架构镜像
-                                        docker buildx build --platform linux/amd64,linux/arm64 \
+                                        # 只构建AMD64架构，避免资源冲突，使用根目录的Dockerfile.backend
+                                        docker buildx build --platform linux/amd64 \
+                                            -f Dockerfile.backend \
                                             -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${DOCKER_IMAGE}-backend:${FULL_DOCKER_TAG} \
                                             -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${DOCKER_IMAGE}-backend:latest \
                                             --push .
@@ -141,6 +154,14 @@ pipeline {
                                 }
                             }
                         }
+                    }
+                }
+            }
+            post {
+                always {
+                    script {
+                        // 清理buildx环境
+                        sh 'docker buildx rm multiarch-builder || true'
                     }
                 }
             }
