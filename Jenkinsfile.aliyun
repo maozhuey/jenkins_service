@@ -338,7 +338,9 @@ pipeline {
                                   echo "Using strategy: \$DEPLOY_STRATEGY"
                                   case \$DEPLOY_STRATEGY in
                                     recreate)
-                                      docker compose \$ENV_ARG -f ${COMPOSE_FILE_REMOTE} down --remove-orphans || true
+                                      # 安全停止容器，不删除外部网络
+                                      docker compose \$ENV_ARG -f ${COMPOSE_FILE_REMOTE} stop || true
+                                      docker compose \$ENV_ARG -f ${COMPOSE_FILE_REMOTE} rm -f || true
                                       # 只清理未使用的网络，但保留外部网络
                                       docker network prune -f --filter "label!=external" || true
                                       echo "Ensuring required external networks exist..."
@@ -374,7 +376,9 @@ pipeline {
                                         nginx:alpine
                                       ;;
                                     rolling|*)
-                                      docker compose \$ENV_ARG -f ${COMPOSE_FILE_REMOTE} down --remove-orphans || true
+                                      # 安全停止容器，不删除外部网络
+                                      docker compose \$ENV_ARG -f ${COMPOSE_FILE_REMOTE} stop || true
+                                      docker compose \$ENV_ARG -f ${COMPOSE_FILE_REMOTE} rm -f || true
                                       # 只清理未使用的网络，但保留外部网络
                                       docker network prune -f --filter "label!=external" || true
                                       echo "Ensuring required external networks exist..."
