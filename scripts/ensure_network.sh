@@ -6,7 +6,7 @@ set -euo pipefail
 # If missing, creates it with the provided subnet (default: 172.21.0.0/16).
 
 NETWORK_NAME=${1:-tbk_app-network}
-SUBNET_CIDR=${2:-172.22.0.0/16}
+SUBNET_CIDR=${2:-172.21.0.0/16}
 
 echo "[ensure_network] Checking Docker daemon..."
 if ! docker info >/dev/null 2>&1; then
