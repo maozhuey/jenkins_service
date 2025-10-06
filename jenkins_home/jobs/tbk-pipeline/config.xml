@@ -4,7 +4,12 @@
     <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@2.2273.v643f36ed9e94"/>
     <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@2.2273.v643f36ed9e94">
       <jobProperties/>
-      <triggers/>
+      <triggers>
+         <hudson.triggers.SCMTrigger>
+           <spec>H/2 * * * *</spec>
+           <ignorePostCommitHooks>false</ignorePostCommitHooks>
+         </hudson.triggers.SCMTrigger>
+       </triggers>
       <parameters>
         <string>PROJECT</string>
         <string>AUTO_DEPLOY_ENABLED</string>
@@ -23,7 +28,12 @@
   <keepDependencies>false</keepDependencies>
   <properties>
     <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
-      <triggers/>
+      <triggers>
+        <hudson.triggers.SCMTrigger>
+          <spec>H/2 * * * *</spec>
+          <ignorePostCommitHooks>false</ignorePostCommitHooks>
+        </hudson.triggers.SCMTrigger>
+      </triggers>
     </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
     <hudson.model.ParametersDefinitionProperty>
       <parameterDefinitions>

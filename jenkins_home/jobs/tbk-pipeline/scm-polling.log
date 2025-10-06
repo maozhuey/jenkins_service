@@ -1,60 +1,19 @@
-Started on Oct 3, 2025, 7:07:00 PM
+Started on Oct 6, 2025, 8:09:00 PM
 Using strategy: Default
-[poll] Last Built Revision: Revision 7f9731a215d8eb8dc6e4cf493e4d77b7abbf9981 (origin/main)
+[poll] Last Built Revision: Revision 40b7ac8ddaf27953eb08e79696443dbfe8a9731c (refs/remotes/origin/main)
 Selected Git installation does not exist. Using Default
 The recommended git tool is: NONE
-using credential git-credentials
- > git rev-parse --resolve-git-dir /var/jenkins_home/workspace/tbk-pipeline@script/a841b3094dc6e493162d9af9028e675eb881722a1f6a1526772217d63354838f/.git # timeout=10
-Fetching changes from the remote Git repositories
- > git config remote.origin.url git@github.com:maozhuey/tbk.git # timeout=10
-Fetching upstream changes from git@github.com:maozhuey/tbk.git
+Warning: CredentialId "git-credentials" could not be found.
  > git --version # timeout=10
  > git --version # 'git version 2.39.5'
-using GIT_SSH to set credentials GitHub SSH Key for tbk repository
-Verifying host key using known hosts file
- > git fetch --tags --force --progress -- git@github.com:maozhuey/tbk.git +refs/heads/*:refs/remotes/origin/* # timeout=10
-Polling for changes in
-Seen branch in repository origin/develop
-Seen branch in repository origin/main
-Seen 2 remote branches
- > git show-ref --tags -d # timeout=10
+ > git ls-remote -h -- git@github.com:maozhuey/tbk.git # timeout=10
+Found 2 remote heads on git@github.com:maozhuey/tbk.git
+[poll] Latest remote head revision on refs/heads/main is: bc8a9f0a5f817f4c51ad8a294fbb5536d374dbaf
 Using strategy: Default
-[poll] Last Built Revision: Revision 7f9731a215d8eb8dc6e4cf493e4d77b7abbf9981 (origin/main)
+[poll] Last Built Revision: Revision 40b7ac8ddaf27953eb08e79696443dbfe8a9731c (refs/remotes/origin/main)
 Selected Git installation does not exist. Using Default
 The recommended git tool is: NONE
-using credential git-credentials
- > git rev-parse --resolve-git-dir /var/jenkins_home/workspace/tbk-pipeline/.git # timeout=10
-Fetching changes from the remote Git repositories
- > git config remote.origin.url git@github.com:maozhuey/tbk.git # timeout=10
-Fetching upstream changes from git@github.com:maozhuey/tbk.git
+Warning: CredentialId "git-credentials" could not be found.
  > git --version # timeout=10
  > git --version # 'git version 2.39.5'
-using GIT_SSH to set credentials GitHub SSH Key for tbk repository
-Verifying host key using known hosts file
- > git fetch --tags --force --progress -- git@github.com:maozhuey/tbk.git +refs/heads/*:refs/remotes/origin/* # timeout=10
-Polling for changes in
-Seen branch in repository origin/develop
-Seen branch in repository origin/main
-Seen 2 remote branches
- > git show-ref --tags -d # timeout=10
-Using strategy: Default
-[poll] Last Built Revision: Revision 7f9731a215d8eb8dc6e4cf493e4d77b7abbf9981 (origin/main)
-Selected Git installation does not exist. Using Default
-The recommended git tool is: NONE
-using credential git-credentials
- > git rev-parse --resolve-git-dir /var/jenkins_home/workspace/tbk-pipeline/.git # timeout=10
-Fetching changes from the remote Git repositories
- > git config remote.origin.url git@github.com:maozhuey/tbk.git # timeout=10
-Fetching upstream changes from git@github.com:maozhuey/tbk.git
- > git --version # timeout=10
- > git --version # 'git version 2.39.5'
-using GIT_SSH to set credentials GitHub SSH Key for tbk repository
-Verifying host key using known hosts file
- > git fetch --tags --force --progress -- git@github.com:maozhuey/tbk.git +refs/heads/*:refs/remotes/origin/* # timeout=10
-Polling for changes in
-Seen branch in repository origin/develop
-Seen branch in repository origin/main
-Seen 2 remote branches
- > git show-ref --tags -d # timeout=10
-Done. Took 12 sec
-No changes
+ > git ls-remote -h -- git@github.com:maozhuey/tbk.git # timeout=10

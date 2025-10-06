@@ -1,0 +1,31 @@
+Manifest-Version: 1.0
+Created-By: Maven Archiver 3.6.4
+Build-Jdk-Spec: 17
+Specification-Title: Pipeline Utility Steps
+Specification-Version: 2.20
+Implementation-Title: Pipeline Utility Steps
+Implementation-Version: 2.20.0
+Group-Id: org.jenkins-ci.plugins
+Artifact-Id: pipeline-utility-steps
+Short-Name: pipeline-utility-steps
+Long-Name: Pipeline Utility Steps
+Url: https://github.com/jenkinsci/pipeline-utility-steps-plugin
+Plugin-Version: 2.20.0
+Hudson-Version: 2.504.3
+Jenkins-Version: 2.504.3
+Plugin-Dependencies: commons-compress-api:1.28.0-1,commons-lang3-api:3.1
+ 8.0-98.v3a_674c06072d,commons-text-api:1.14.0-194.v804a_dc3a_1b_d8,snak
+ eyaml-api:2.3-125.v4d77857a_b_402,workflow-cps:4183.v94b_6fd39da_c1;res
+ olution:=optional,workflow-step-api:706.v518c5dcb_24c0,jackson2-api:2.1
+ 9.2-408.v18248a_324cfe,script-security:1378.vf25626395f49,structs:353.v
+ 261ea_40a_80fb_
+Plugin-Developers: Robert Sandell:rsandell:rsandell@cloudbees.com
+Plugin-License-Name: MIT License
+Plugin-License-Url: https://opensource.org/licenses/MIT
+Plugin-ScmConnection: scm:git:https://github.com/jenkinsci/pipeline-util
+ ity-steps-plugin.git
+Plugin-ScmTag: pipeline-utility-steps-2.20.0
+Plugin-ScmUrl: https://github.com/jenkinsci/pipeline-utility-steps-plugi
+ n
+Implementation-Build: d043799a3072da224aa04126b082154421b5a241
+
