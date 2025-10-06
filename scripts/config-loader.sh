@@ -6,16 +6,23 @@
 # 获取脚本所在目录的绝对路径
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+echo "DEBUG: 脚本所在目录: $SCRIPT_DIR" >&2
+
 # 智能路径检测：支持本地开发环境和ECS部署环境
 if [[ "$SCRIPT_DIR" == */scripts ]]; then
     # 本地开发环境：脚本在 scripts/ 子目录中
     PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
     CONFIG_FILE="$PROJECT_ROOT/config/network.conf"
+    echo "DEBUG: 检测为本地开发环境" >&2
 else
     # ECS部署环境：脚本直接在项目根目录中
     PROJECT_ROOT="$SCRIPT_DIR"
     CONFIG_FILE="$PROJECT_ROOT/config/network.conf"
+    echo "DEBUG: 检测为ECS部署环境" >&2
 fi
+
+echo "DEBUG: 项目根目录: $PROJECT_ROOT" >&2
+echo "DEBUG: 初始配置文件路径: $CONFIG_FILE" >&2
 
 # 兼容性回退：如果默认路径不存在，尝试常见的部署目录
 if [[ ! -f "$CONFIG_FILE" ]]; then
