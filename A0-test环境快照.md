@@ -76,6 +76,14 @@ be86e5305a25   jenkins-service_tbk-production-network   bridge    local
 ```
 **重要发现**: tbk_app-network 在本地环境中已存在！
 
+### 阿里云ECS服务器
+- **IP地址**: 60.205.0.185 ⚠️ **重要**: 这是正确的生产服务器IP，不是47.115.209.46
+- **操作系统**: Linux (具体版本待确认)
+- **Docker版本**: 待确认
+- **用户**: root
+- **密码**: han0419/
+- **网络状态**: tbk_app-network已创建 (ID: d1a7b01d3972, 子网: 172.21.0.0/16)
+
 ### 阿里云ECS网络配置
 ```bash
 [ECS网络配置信息 - 待收集]

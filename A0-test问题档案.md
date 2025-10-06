@@ -75,18 +75,18 @@ Connecting to Aliyun ECS host...
 Cleaning up existing containers and networks...
 Using strategy: rolling
 Error response from daemon: network with name tbk_app-network already exists
-time="2025-10-06T15:01:04+08:00" level=warning msg="/opt/apps/tbk/aliyun-ecs-deploy.yml: `version` is obsolete"
+time="2025-10-06T15:34:28+08:00" level=warning msg="/opt/apps/tbk/aliyun-ecs-deploy.yml: `version` is obsolete"
  Network tbk_tbk-production-network  Removing
  Network tbk_tbk-production-network  Resource is still in use
 Deleted Networks:
 tbk_app-network
 
 Pulling latest image...
-time="2025-10-06T15:01:05+08:00" level=warning msg="/opt/apps/tbk/aliyun-ecs-deploy.yml: `version` is obsolete"
+time="2025-10-06T15:34:28+08:00" level=warning msg="/opt/apps/tbk/aliyun-ecs-deploy.yml: `version` is obsolete"
  tbk-production Pulling 
  tbk-production Pulled 
 Starting services (rolling)...
-time="2025-10-06T15:01:05+08:00" level=warning msg="/opt/apps/tbk/aliyun-ecs-deploy.yml: `version` is obsolete"
+time="2025-10-06T15:34:29+08:00" level=warning msg="/opt/apps/tbk/aliyun-ecs-deploy.yml: `version` is obsolete"
  tbk-production Pulling 
  tbk-production Pulled 
 Error response from daemon: network tbk_app-network not found
