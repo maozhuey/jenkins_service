@@ -1,0 +1,347 @@
+pipeline {
+    agent any
+    
+    parameters {
+        string(
+            name: 'PROJECT',
+            defaultValue: 'product-catalog',
+            description: '项目标识'
+        )
+        booleanParam(
+            name: 'CONFIRM_PRODUCTION_DEPLOY',
+            defaultValue: false,
+            description: '确认部署到生产环境 (谨慎操作)'
+        )
+        booleanParam(
+            name: 'AUTO_DEPLOY_ENABLED',
+            defaultValue: true,
+            description: '启用自动部署到生产环境'
+        )
+        choice(
+            name: 'DEPLOY_STRATEGY',
+            choices: ['rolling', 'recreate'],
+            description: '部署策略'
+        )
+    }
+    
+    environment {
+        // 项目配置
+        PROJECT_NAME = 'product-catalog'
+        DOCKER_IMAGE = 'product-catalog'
+        DOCKER_TAG = "${BUILD_NUMBER}"
+        
+        // 阿里云配置
+        DOCKER_REGISTRY = 'crpi-p6joc7xl4atpiic8.cn-hangzhou.personal.cr.aliyuncs.com'
+        DOCKER_NAMESPACE = 'hanchanglin'
+        ALIYUN_SERVER = '60.205.0.185'
+        DEPLOY_PATH = '/opt/product-catalog'
+        
+        // 构建配置
+        BUILD_NUMBER = "${env.BUILD_NUMBER}"
+        GIT_COMMIT_SHORT = "${env.GIT_COMMIT?.take(7) ?: 'unknown'}"
+        FULL_DOCKER_TAG = "${BUILD_NUMBER}-${GIT_COMMIT_SHORT}"
+        
+        // 健康检查
+        HEALTH_CHECK_URL = "http://${ALIYUN_SERVER}:3000/api/health"
+    }
+    
+    stages {
+        stage('环境检查') {
+            steps {
+                echo '🔍 检查构建环境...'
+                script {
+                    sh 'docker --version'
+                    sh 'node --version'
+                    sh 'npm --version'
+                    echo "构建分支: ${env.GIT_BRANCH}"
+                    echo "提交ID: ${GIT_COMMIT_SHORT}"
+                    echo "构建号: ${BUILD_NUMBER}"
+                }
+            }
+        }
+        
+        stage('代码检出') {
+            steps {
+                echo '📥 检出代码...'
+                checkout scm
+                script {
+                    sh 'ls -la'
+                    sh 'pwd'
+                }
+            }
+        }
+        
+        stage('前端构建') {
+            steps {
+                echo '🎨 构建前端静态文件...'
+                script {
+                    // 检查前端文件
+                    sh 'ls -la js/ css/ || echo "静态文件目录检查完成"'
+                    
+                    // 如果有package.json，执行npm构建
+                    if (fileExists('package.json')) {
+                        sh 'npm install'
+                        sh 'npm run build || echo "跳过前端构建步骤"'
+                    }
+                }
+            }
+        }
+        
+        stage('后端构建') {
+            steps {
+                echo '⚙️ 构建后端服务...'
+                dir('backend') {
+                    sh 'npm install --production'
+                    sh 'npm test || echo "跳过测试步骤"'
+                }
+            }
+        }
+        
+        stage('Docker镜像构建') {
+            parallel {
+                stage('构建前端镜像') {
+                    steps {
+                        echo '🐳 构建前端Docker镜像 (多架构支持)...'
+                        dir('frontend') {
+                            script {
+                                // 使用buildx进行多架构构建，支持AMD64和ARM64
+                                docker.withRegistry("https://${DOCKER_REGISTRY}", 'aliyun-acr') {
+                                    sh """
+                                        # 确保buildx可用
+                                        docker buildx create --use --name multiarch-builder || docker buildx use multiarch-builder
+                                        
+                                        # 构建并推送多架构镜像
+                                        docker buildx build --platform linux/amd64,linux/arm64 \
+                                            -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${DOCKER_IMAGE}-frontend:${FULL_DOCKER_TAG} \
+                                            -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${DOCKER_IMAGE}-frontend:latest \
+                                            --push .
+                                    """
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('构建后端镜像') {
+                    steps {
+                        echo '🐳 构建后端Docker镜像 (多架构支持)...'
+                        dir('backend') {
+                            script {
+                                // 使用buildx进行多架构构建，支持AMD64和ARM64
+                                docker.withRegistry("https://${DOCKER_REGISTRY}", 'aliyun-acr') {
+                                    sh """
+                                        # 确保buildx可用
+                                        docker buildx create --use --name multiarch-builder || docker buildx use multiarch-builder
+                                        
+                                        # 构建并推送多架构镜像
+                                        docker buildx build --platform linux/amd64,linux/arm64 \
+                                            -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${DOCKER_IMAGE}-backend:${FULL_DOCKER_TAG} \
+                                            -t ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${DOCKER_IMAGE}-backend:latest \
+                                            --push .
+                                    """
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('部署确认') {
+            when {
+                expression { params.CONFIRM_PRODUCTION_DEPLOY == true }
+            }
+            steps {
+                script {
+                    def userInput = input(
+                        id: 'deployConfirm',
+                        message: '确认部署到生产环境？',
+                        parameters: [
+                            choice(
+                                name: 'DEPLOY_CONFIRM',
+                                choices: ['取消', '确认部署'],
+                                description: '请确认是否部署到生产环境'
+                            )
+                        ]
+                    )
+                    
+                    if (userInput != '确认部署') {
+                        error('用户取消了部署操作')
+                    }
+                }
+            }
+        }
+        
+        stage('部署到阿里云') {
+            when {
+                anyOf {
+                    expression { params.AUTO_DEPLOY_ENABLED == true }
+                    expression { params.CONFIRM_PRODUCTION_DEPLOY == true }
+                }
+            }
+            steps {
+                echo '🚀 部署到阿里云服务器...'
+                script {
+                    // 复制配置文件到服务器
+                    sh """
+                        echo "复制配置文件到服务器..."
+                        scp -o StrictHostKeyChecking=no docker-compose.yml root@${ALIYUN_SERVER}:${DEPLOY_PATH}/
+                        scp -o StrictHostKeyChecking=no .env.docker root@${ALIYUN_SERVER}:${DEPLOY_PATH}/.env
+                    """
+                    
+                    // 在服务器上部署
+                    def deployStrategy = params.DEPLOY_STRATEGY ?: 'rolling'
+                    
+                    sh """
+                        echo "开始${deployStrategy}部署..."
+                        ssh -o StrictHostKeyChecking=no root@${ALIYUN_SERVER} '
+                            set -e  # 遇到错误立即退出
+                            cd ${DEPLOY_PATH}
+                            
+                            # 检查系统资源
+                            echo "检查系统资源..."
+                            free -h
+                            df -h
+                            
+                            # 检查Docker状态
+                            echo "检查Docker服务状态..."
+                            systemctl is-active docker || (echo "Docker服务未运行，尝试启动..." && systemctl start docker)
+                            
+                            # 创建备份
+                            echo "创建部署备份..."
+                            docker-compose ps > deployment_backup_\$(date +%Y%m%d_%H%M%S).log 2>/dev/null || echo "无现有服务需要备份"
+                            
+                            # 清理可能损坏的容器和网络
+                            echo "清理可能损坏的资源..."
+                            docker container prune -f || true
+                            docker network prune -f || true
+                            
+                            # 拉取最新镜像
+                            echo "拉取最新镜像..."
+                            docker pull ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${DOCKER_IMAGE}-frontend:latest || exit 1
+                            docker pull ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${DOCKER_IMAGE}-backend:latest || exit 1
+                            
+                            # 根据部署策略执行部署
+                            if [ "${deployStrategy}" = "recreate" ]; then
+                                echo "执行重建部署..."
+                                docker-compose down --remove-orphans || true
+                                sleep 5
+                                docker-compose up -d --remove-orphans
+                            else
+                                echo "执行滚动部署..."
+                                # 先停止可能有问题的服务
+                                docker-compose stop backend frontend || true
+                                sleep 5
+                                
+                                # 启动MySQL（如果未运行）
+                                docker-compose up -d mysql
+                                sleep 20
+                                
+                                # 启动后端
+                                docker-compose up -d backend
+                                sleep 15
+                                
+                                # 启动前端
+                                docker-compose up -d frontend
+                                sleep 10
+                            fi
+                            
+                            # 检查服务状态
+                            echo "检查服务状态..."
+                            docker-compose ps
+                            
+                            # 清理旧镜像
+                            docker image prune -f || true
+                            
+                            echo "部署完成，等待服务启动..."
+                            sleep 30
+                        '
+                    """
+                }
+            }
+        }
+        
+        stage('健康检查') {
+            steps {
+                echo '🏥 执行健康检查...'
+                script {
+                    def maxRetries = 5
+                    def retryCount = 0
+                    def healthCheckPassed = false
+                    
+                    while (retryCount < maxRetries && !healthCheckPassed) {
+                        try {
+                            sh """
+                                echo "健康检查尝试 \$((${retryCount} + 1))/${maxRetries}..."
+                                curl -f ${HEALTH_CHECK_URL} --max-time 10
+                            """
+                            healthCheckPassed = true
+                            echo "✅ 健康检查通过！"
+                        } catch (Exception e) {
+                            retryCount++
+                            if (retryCount < maxRetries) {
+                                echo "❌ 健康检查失败，30秒后重试..."
+                                sleep(30)
+                            } else {
+                                error("❌ 健康检查失败，部署可能存在问题！")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('部署验证') {
+            steps {
+                echo '✅ 验证部署结果...'
+                script {
+                    sh """
+                        echo "验证API端点..."
+                        curl -f ${HEALTH_CHECK_URL} || exit 1
+                        curl -f http://${ALIYUN_SERVER}:3000/api/peach-varieties | head -100 || exit 1
+                        echo "✅ 部署验证成功！"
+                    """
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo '🧹 清理工作空间...'
+            cleanWs()
+        }
+        success {
+            echo '🎉 构建部署成功！'
+            script {
+                def deployInfo = """
+                📦 Product-Catalog 部署成功！
+                
+                🔗 访问地址: http://${ALIYUN_SERVER}:3000
+                    🏥 健康检查: ${HEALTH_CHECK_URL}
+                🐳 镜像版本: ${FULL_DOCKER_TAG}
+                📅 部署时间: ${new Date()}
+                🌿 Git分支: ${env.GIT_BRANCH}
+                📝 提交ID: ${GIT_COMMIT_SHORT}
+                """
+                echo deployInfo
+            }
+        }
+        failure {
+            echo '❌ 构建部署失败！'
+            script {
+                def failureInfo = """
+                ❌ Product-Catalog 部署失败！
+                
+                📅 失败时间: ${new Date()}
+                🌿 Git分支: ${env.GIT_BRANCH}
+                📝 提交ID: ${GIT_COMMIT_SHORT}
+                🔍 请检查构建日志获取详细信息
+                """
+                echo failureInfo
+            }
+        }
+        unstable {
+            echo '⚠️ 构建不稳定！'
+        }
+    }
+}

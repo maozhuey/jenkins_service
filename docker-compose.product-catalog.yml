@@ -1,0 +1,102 @@
+version: '3.8'
+
+services:
+  # MySQL数据库服务
+  mysql:
+    image: mysql:8.0
+    container_name: product-catalog-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: han0419/
+      MYSQL_DATABASE: product_catalog
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init_database.sql:/docker-entrypoint-initdb.d/init_database.sql:ro
+    networks:
+      - product-catalog-network
+    # 添加内存限制防止资源耗尽
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      timeout: 20s
+      retries: 10
+      interval: 30s
+      start_period: 60s
+
+  # 后端API服务
+  backend:
+    image: ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/product-catalog-backend:latest
+    container_name: product-catalog-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: han0419/
+      DB_NAME: product_catalog
+      CORS_ORIGIN: http://localhost
+    ports:
+      - "3000:3000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - product-catalog-network
+    # 添加内存限制防止资源耗尽
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health", "--timeout=5"]
+      timeout: 10s
+      retries: 5
+      interval: 30s
+      start_period: 60s
+
+  # 前端Web服务
+  frontend:
+    image: ${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/product-catalog-frontend:latest
+    container_name: product-catalog-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - product-catalog-network
+    # 添加内存限制防止资源耗尽
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/", "--timeout=5"]
+      timeout: 10s
+      retries: 3
+      interval: 30s
+      start_period: 30s
+
+
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  product-catalog-network:
+    driver: bridge
