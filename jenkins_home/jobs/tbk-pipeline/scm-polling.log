@@ -17,3 +17,7 @@ Warning: CredentialId "git-credentials" could not be found.
  > git --version # timeout=10
  > git --version # 'git version 2.39.5'
  > git ls-remote -h -- git@github.com:maozhuey/tbk.git # timeout=10
+Found 2 remote heads on git@github.com:maozhuey/tbk.git
+[poll] Latest remote head revision on refs/heads/main is: bc8a9f0a5f817f4c51ad8a294fbb5536d374dbaf
+Done. Took 11 sec
+Changes found
