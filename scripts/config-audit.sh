@@ -24,7 +24,13 @@ fi
 
 # 使用中心化配置
 EXPECTED_SUBNET="$SUBNET"
-BASE_DIR="/Users/hanchanglin/AI编程代码库/jenkins-service"
+# 自动检测项目根目录：优先使用脚本所在目录的父目录，其次使用部署路径环境变量，最后回退到/opt/apps/tbk
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+if [[ -d "$PROJECT_ROOT" ]]; then
+    BASE_DIR="$PROJECT_ROOT"
+else
+    BASE_DIR="${ECS_DEPLOY_PATH:-/opt/apps/tbk}"
+fi
 
 echo -e "${BLUE}=== 网络配置审计开始 ===${NC}"
 echo "期望子网: ${EXPECTED_SUBNET}"
@@ -38,8 +44,9 @@ check_file_config() {
     local description="$2"
     
     if [[ ! -f "$file" ]]; then
-        echo -e "${YELLOW}⚠️  文件不存在: $file${NC}"
-        return 1
+        echo -e "${YELLOW}⚠️  文件不存在: $file（远端环境可能未包含该文件，跳过）${NC}"
+        # 在远端环境缺失非关键文件时不计为错误
+        return 0
     fi
     
     echo -e "${BLUE}检查: $description${NC}"
@@ -79,8 +86,8 @@ check_file_config() {
 # 检查文件列表
 declare -a files_to_check=(
     "$BASE_DIR/Jenkinsfile.aliyun.template:Jenkins模板文件"
-    "$BASE_DIR/scripts/ensure_network.sh:网络创建脚本"
-    "$BASE_DIR/scripts/robust_network_manager.sh:网络管理脚本"
+    "$BASE_DIR/ensure_network.sh:网络创建脚本"
+    "$BASE_DIR/rebuild-network.sh:网络重建脚本"
     "$BASE_DIR/emergency-production-fix.sh:紧急修复脚本"
     "$BASE_DIR/fix-deployment-sync.sh:部署同步脚本"
 )
@@ -109,7 +116,8 @@ done
 echo -e "${BLUE}=== Docker网络状态检查 ===${NC}"
 if command -v docker &> /dev/null; then
     if docker network ls | grep -q "$NETWORK_NAME"; then
-        network_info=$(docker network inspect "$NETWORK_NAME" 2>/dev/null | jq -r '.[0].IPAM.Config[0].Subnet' 2>/dev/null || echo "未知")
+        # 使用docker自带的--format避免依赖jq
+        network_info=$(docker network inspect "$NETWORK_NAME" --format '{{ (index .IPAM.Config 0).Subnet }}' 2>/dev/null || echo "未知")
         if [[ "$network_info" == "$EXPECTED_SUBNET" ]]; then
             echo -e "${GREEN}✅ Docker网络 $NETWORK_NAME 子网正确: $network_info${NC}"
         else
@@ -118,6 +126,7 @@ if command -v docker &> /dev/null; then
         fi
     else
         echo -e "${YELLOW}⚠️  Docker网络 $NETWORK_NAME 不存在${NC}"
+        # 不将缺失网络计为文件配置错误，由ensure_network负责创建
     fi
 else
     echo -e "${YELLOW}⚠️  Docker命令不可用，跳过网络检查${NC}"
