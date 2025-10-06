@@ -1,0 +1,19 @@
+# 配置漂移检测定时任务配置
+# 使用方法: crontab /path/to/this/file
+
+# 每小时检查一次配置漂移（生产环境建议）
+0 * * * * /Users/hanchanglin/AI编程代码库/jenkins-service/scripts/config-drift-monitor.sh check >> /Users/hanchanglin/AI编程代码库/jenkins-service/logs/cron.log 2>&1
+
+# 每天凌晨2点清理旧日志
+0 2 * * * /Users/hanchanglin/AI编程代码库/jenkins-service/scripts/config-drift-monitor.sh cleanup 30 >> /Users/hanchanglin/AI编程代码库/jenkins-service/logs/cron.log 2>&1
+
+# 每周一上午9点发送状态报告
+0 9 * * 1 /Users/hanchanglin/AI编程代码库/jenkins-service/scripts/config-drift-monitor.sh status >> /Users/hanchanglin/AI编程代码库/jenkins-service/logs/weekly-report.log 2>&1
+
+# 备选方案 - 更频繁的检查（开发/测试环境）
+# 每15分钟检查一次（取消注释以启用）
+# */15 * * * * /Users/hanchanglin/AI编程代码库/jenkins-service/scripts/config-drift-monitor.sh check >> /Users/hanchanglin/AI编程代码库/jenkins-service/logs/cron.log 2>&1
+
+# 备选方案 - 较少的检查（稳定环境）
+# 每6小时检查一次（取消注释以启用）
+# 0 */6 * * * /Users/hanchanglin/AI编程代码库/jenkins-service/scripts/config-drift-monitor.sh check >> /Users/hanchanglin/AI编程代码库/jenkins-service/logs/cron.log 2>&1

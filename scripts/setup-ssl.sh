@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# TBK Development Environment - SSL Certificate Setup Script
+# TBK SSL Certificate Setup Script
 # SSL证书配置脚本
 
 set -e
@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # 配置变量
-DOMAIN="${1:-dev.tbk.example.com}"
+DOMAIN="${1:-tbk.example.com}"
 EMAIL="${2:-admin@example.com}"
 SSL_DIR="./ssl"
 CERT_TYPE="${3:-self-signed}"  # self-signed, letsencrypt, custom
@@ -40,7 +40,7 @@ show_usage() {
     echo "Usage: $0 [domain] [email] [cert_type]"
     echo ""
     echo "Parameters:"
-    echo "  domain    - Domain name (default: dev.tbk.example.com)"
+    echo "  domain    - Domain name (default: tbk.example.com)"
     echo "  email     - Email for Let's Encrypt (default: admin@example.com)"
     echo "  cert_type - Certificate type: self-signed, letsencrypt, custom (default: self-signed)"
     echo ""
@@ -73,7 +73,7 @@ prompt = no
 C = CN
 ST = Beijing
 L = Beijing
-O = TBK Development
+O = TBK
 OU = IT Department
 CN = $DOMAIN
 
@@ -281,7 +281,7 @@ create_domain_config() {
     log_info "Creating domain configuration..."
     
     cat > "$SSL_DIR/domain.conf" << EOF
-# TBK Development Environment - Domain Configuration
+# TBK Domain Configuration
 
 # Primary domain
 DOMAIN=$DOMAIN
@@ -394,7 +394,7 @@ EOF
 # 主函数
 main() {
     echo ""
-    log_info "TBK Development Environment - SSL Certificate Setup"
+    log_info "TBK SSL Certificate Setup"
     echo "=================================================="
     echo ""
     

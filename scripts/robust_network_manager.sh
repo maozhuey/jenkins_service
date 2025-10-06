@@ -5,7 +5,7 @@
 set -euo pipefail
 
 NETWORK_NAME=${1:-tbk_app-network}
-SUBNET_CIDR=${2:-172.22.0.0/16}
+SUBNET_CIDR=${2:-172.21.0.0/16}
 MAX_RETRIES=3
 RETRY_DELAY=2
 
@@ -131,7 +131,7 @@ jenkins_network_check() {
 # 可嵌入Jenkinsfile的网络检查逻辑
 if [ ! "$(docker network ls -q -f name=^tbk_app-network$)" ]; then
     echo "网络不存在，创建中..."
-    docker network create tbk_app-network --subnet=172.22.0.0/16 --label external=true || {
+    docker network create tbk_app-network --subnet=172.21.0.0/16 --label external=true || {
         echo "网络创建失败，检查冲突..."
         docker network ls | grep tbk
         exit 1
@@ -141,7 +141,7 @@ else
     docker network inspect tbk_app-network >/dev/null || {
         echo "网络状态异常，重新创建..."
         docker network rm tbk_app-network --force || true
-        docker network create tbk_app-network --subnet=172.22.0.0/16 --label external=true
+        docker network create tbk_app-network --subnet=172.21.0.0/16 --label external=true
     }
 fi
 EOF

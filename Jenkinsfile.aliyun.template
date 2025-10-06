@@ -299,7 +299,7 @@ pipeline {
                             // 部署前进行本地验证脚本，避免已知配置问题
                             sh 'bash ./verify-deployment-fix.sh'
 
-                            // 准备远端目录与同步必要文件（compose、env、网络保障脚本）
+                            // 准备远端目录与同步必要文件（compose、env、配置验证和网络保障脚本）
                             sh """
                                 set -e
                                 echo "Ensuring remote deploy directory exists..."
@@ -308,6 +308,25 @@ pipeline {
                                 # 仅当本地存在对应文件时才上传
                                 [ -f ${COMPOSE_FILE_REMOTE} ] && scp -o StrictHostKeyChecking=no ${COMPOSE_FILE_REMOTE} ${ECS_USER}@${ECS_HOST}:${ECS_DEPLOY_PATH}/ || true
                                 [ -f ${ENV_FILE} ] && scp -o StrictHostKeyChecking=no ${ENV_FILE} ${ECS_USER}@${ECS_HOST}:${ECS_DEPLOY_PATH}/ || true
+                                
+                                # 上传配置验证脚本
+                                if [ -f scripts/config-audit.sh ]; then
+                                    scp -o StrictHostKeyChecking=no scripts/config-audit.sh ${ECS_USER}@${ECS_HOST}:${ECS_DEPLOY_PATH}/config-audit.sh
+                                    ssh -o StrictHostKeyChecking=no ${ECS_USER}@${ECS_HOST} 'chmod +x ${ECS_DEPLOY_PATH}/config-audit.sh'
+                                    echo "✅ config-audit.sh uploaded and made executable"
+                                else
+                                    echo "❌ WARNING: scripts/config-audit.sh not found locally!"
+                                fi
+                                
+                                # 上传网络重建脚本
+                                if [ -f scripts/rebuild-network.sh ]; then
+                                    scp -o StrictHostKeyChecking=no scripts/rebuild-network.sh ${ECS_USER}@${ECS_HOST}:${ECS_DEPLOY_PATH}/rebuild-network.sh
+                                    ssh -o StrictHostKeyChecking=no ${ECS_USER}@${ECS_HOST} 'chmod +x ${ECS_DEPLOY_PATH}/rebuild-network.sh'
+                                    echo "✅ rebuild-network.sh uploaded and made executable"
+                                else
+                                    echo "❌ WARNING: scripts/rebuild-network.sh not found locally!"
+                                fi
+                                
                                 # 上传网络保障脚本并设置执行权限
                                 if [ -f scripts/ensure_network.sh ]; then
                                     scp -o StrictHostKeyChecking=no scripts/ensure_network.sh ${ECS_USER}@${ECS_HOST}:${ECS_DEPLOY_PATH}/ensure_network.sh
@@ -325,6 +344,33 @@ pipeline {
                                 ssh -o StrictHostKeyChecking=no ${ECS_USER}@${ECS_HOST} '
                                   set -e
                                   cd ${ECS_DEPLOY_PATH}
+                                  
+                                  echo "Pre-deployment: running configuration audit..."
+                                  if [ -f ${ECS_DEPLOY_PATH}/config-audit.sh ]; then
+                                      echo "✅ Found config-audit.sh script, executing..."
+                                      if ! bash ${ECS_DEPLOY_PATH}/config-audit.sh; then
+                                          echo "❌ Configuration audit failed, attempting auto-repair..."
+                                          if [ -f ${ECS_DEPLOY_PATH}/rebuild-network.sh ]; then
+                                              echo "🔧 Running network rebuild script..."
+                                              bash ${ECS_DEPLOY_PATH}/rebuild-network.sh
+                                              
+                                              # 再次验证配置
+                                              if ! bash ${ECS_DEPLOY_PATH}/config-audit.sh; then
+                                                  echo "❌ Auto-repair failed, stopping deployment"
+                                                  exit 1
+                                              fi
+                                              echo "✅ Auto-repair successful"
+                                          else
+                                              echo "❌ rebuild-network.sh not found, cannot auto-repair"
+                                              exit 1
+                                          fi
+                                      else
+                                          echo "✅ Configuration audit passed"
+                                      fi
+                                  else
+                                      echo "⚠️ WARNING: config-audit.sh not found, skipping configuration validation"
+                                  fi
+                                  
                                   echo "Pre-flight: ensuring external network exists and labeled..."
                                   if [ -f ${ECS_DEPLOY_PATH}/ensure_network.sh ]; then
                                       echo "✅ Found ensure_network.sh script, executing..."

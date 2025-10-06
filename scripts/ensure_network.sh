@@ -3,10 +3,26 @@ set -euo pipefail
 
 # Usage: ensure_network.sh <network_name> [subnet]
 # Ensures a Docker network exists and carries label external=true.
-# If missing, creates it with the provided subnet (default: 172.21.0.0/16).
+# If missing, creates it with the provided subnet (default from config).
 
-NETWORK_NAME=${1:-tbk_app-network}
-SUBNET_CIDR=${2:-172.21.0.0/16}
+# 加载中心化配置
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/config-loader.sh" ]]; then
+    source "$SCRIPT_DIR/config-loader.sh"
+    if load_network_config >/dev/null 2>&1; then
+        DEFAULT_NETWORK_NAME="$NETWORK_NAME"
+        DEFAULT_SUBNET="$SUBNET"
+    else
+        DEFAULT_NETWORK_NAME="tbk_app-network"
+        DEFAULT_SUBNET="172.21.0.0/16"
+    fi
+else
+    DEFAULT_NETWORK_NAME="tbk_app-network"
+    DEFAULT_SUBNET="172.21.0.0/16"
+fi
+
+NETWORK_NAME=${1:-$DEFAULT_NETWORK_NAME}
+SUBNET_CIDR=${2:-$DEFAULT_SUBNET}
 
 echo "[ensure_network] Checking Docker daemon..."
 if ! docker info >/dev/null 2>&1; then

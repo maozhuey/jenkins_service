@@ -78,9 +78,9 @@ switch_to_local() {
     
     # Update database configuration
     sed -i '' 's/^DB_HOST=.*/DB_HOST=mysql-local/' "$ENV_FILE"
-    sed -i '' 's/^DB_USER=.*/DB_USER=tbk_user/' "$ENV_FILE"
+    sed -i '' 's/^DB_USER=.*/DB_USER=root/' "$ENV_FILE"
     sed -i '' 's/^DB_PASSWORD=.*/DB_PASSWORD=han0419\//' "$ENV_FILE"
-    sed -i '' 's/^DB_NAME=.*/DB_NAME=tbk_dev/' "$ENV_FILE"
+    sed -i '' 's/^DB_NAME=.*/DB_NAME=peach_wiki/' "$ENV_FILE"
     sed -i '' 's/^DB_PORT=.*/DB_PORT=3306/' "$ENV_FILE"
     
     log_success "已切换到本地Docker数据库"

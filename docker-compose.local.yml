@@ -13,9 +13,9 @@ services:
       - NODE_ENV=local
       - PORT=3000
       - DB_HOST=mysql-local
-      - DB_USER=${DB_USER:-tbk_user}
+      - DB_USER=${DB_USER:-root}
       - DB_PASSWORD=${DB_PASSWORD:-han0419/}
-      - DB_NAME=${DB_NAME:-tbk_dev}
+      - DB_NAME=${DB_NAME:-peach_wiki}
       - DB_PORT=${DB_PORT:-3306}
       - REDIS_HOST=redis-local
       - REDIS_PORT=6379
@@ -48,8 +48,8 @@ services:
       - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-han0419/}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-tbk_dev}
-      MYSQL_USER: ${DB_USER:-tbk_user}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-peach_wiki}
+      MYSQL_USER: ${DB_USER:-root}
       MYSQL_PASSWORD: ${DB_PASSWORD:-han0419/}
     volumes:
       - mysql_local_data:/var/lib/mysql
@@ -64,7 +64,7 @@ services:
       retries: 5
       start_period: 30s
 
-  # Redis for Local Development
+  # Redis for Local Environment
   redis-local:
     image: redis:7-alpine
     container_name: redis-local

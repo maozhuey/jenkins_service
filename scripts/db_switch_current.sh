@@ -95,9 +95,9 @@ apply_local() {
   redis_host="$(detect_service_host redis-local localhost)"
 
   update_env_var "$env_file" DB_HOST "$db_host"
-  update_env_var "$env_file" DB_USER "tbk_user"
+  update_env_var "$env_file" DB_USER "root"
   update_env_var "$env_file" DB_PASSWORD "han0419/"
-  update_env_var "$env_file" DB_NAME "tbk_dev"
+  update_env_var "$env_file" DB_NAME "peach_wiki"
   update_env_var "$env_file" DB_PORT "3306"
 
   update_env_var "$env_file" REDIS_HOST "$redis_host"
@@ -107,9 +107,9 @@ apply_local() {
   # 兼容运行时默认加载 .env 的项目：同步更新 .env
   local default_env="$CWD/.env"
   update_env_var "$default_env" DB_HOST "$db_host"
-  update_env_var "$default_env" DB_USER "tbk_user"
+  update_env_var "$default_env" DB_USER "root"
   update_env_var "$default_env" DB_PASSWORD "han0419/"
-  update_env_var "$default_env" DB_NAME "tbk_dev"
+  update_env_var "$default_env" DB_NAME "peach_wiki"
   update_env_var "$default_env" DB_PORT "3306"
   update_env_var "$default_env" REDIS_HOST "$redis_host"
   update_env_var "$default_env" REDIS_PORT "6379"

@@ -32,9 +32,9 @@ NODE_ENV=local
 PORT=3001
 DB_HOST=localhost
 DB_PORT=3307
-DB_NAME=tbk_dev
-DB_USER=tbk_user
-DB_PASSWORD=tbk_password
+DB_NAME=peach_wiki
+DB_USER=root
+DB_PASSWORD=han0419/
 EOF
 
 cat > .env.production << EOF

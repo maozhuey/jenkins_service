@@ -47,7 +47,7 @@ NETWORK_NAME=tbk_app-network
 DB_HOST=tbk-mysql
 DB_USER=tbk_admin
 DB_PASSWORD=Han0419@MySQL
-DB_NAME=tbk
+DB_NAME=peach_wiki
 DB_PORT=3306
 
 # Redis配置
@@ -106,20 +106,7 @@ CPU_LIMIT=0.5
 MEMORY_LIMIT=512M
 EOF
             ;;
-        "development")
-            cat > "$ENV_FILE" << EOF
-# 开发环境配置
-DOCKER_REGISTRY=localhost:5000
-DOCKER_IMAGE=tbk
-DOCKER_TAG=dev
-SERVICE_NAME=tbk-dev
-CONTAINER_NAME=tbk-dev
-NETWORK_NAME=tbk_dev-network
-NODE_ENV=development
-LOG_LEVEL=debug
-DB_PASSWORD=dev_password
-EOF
-            ;;
+
     esac
 }
 
@@ -301,7 +288,7 @@ main() {
 用法: $0 <action> [env_type]
 
 Actions:
-  setup <env_type>    - 设置环境配置 (production|staging|development)
+  setup <env_type>    - 设置环境配置 (production|staging)
   generate [env_type] - 生成 docker-compose 文件
   validate           - 验证环境配置
   jenkins            - 显示 Jenkins 配置示例

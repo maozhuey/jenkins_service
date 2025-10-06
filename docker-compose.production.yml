@@ -1,5 +1,5 @@
 # 阿里云ECS部署配置
-# TBK Development Environment - Aliyun ECS Deployment Configuration
+# TBK Production Environment - Aliyun ECS Deployment Configuration
 
 services:
   # TBK应用服务 - 从阿里云ACR拉取Jenkins构建的镜像
@@ -16,7 +16,7 @@ services:
       - DB_HOST=tbk-mysql
       - DB_USER=tbk
       - DB_PASSWORD=tbk123
-      - DB_NAME=tbk
+      - DB_NAME=peach_wiki
       - DB_PORT=3306
       - REDIS_PASSWORD=han0419
       - PUBLIC_ACCESS=true

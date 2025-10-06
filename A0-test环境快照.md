@@ -25,7 +25,6 @@
 ### 本地环境变量
 ```bash
 发现以下环境配置文件:
-- .env.dev (359 bytes, 2024-10-03)
 - .env.local (807 bytes, 2024-10-04) 
 - .env.production (754 bytes, 2024-10-05)
 - .env.public (636 bytes, 2024-10-03)

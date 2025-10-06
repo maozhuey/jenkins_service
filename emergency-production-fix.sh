@@ -55,12 +55,12 @@ docker network prune -f --filter "label!=external" || true
 
 log_info "创建必需的网络..."
 # 创建外部网络（如果不存在）
-docker network create tbk_app-network --subnet=172.22.0.0/16 --label external=true 2>/dev/null || {
+docker network create tbk_app-network --subnet=172.21.0.0/16 --label external=true 2>/dev/null || {
     log_warn "tbk_app-network 已存在，跳过创建"
 }
 
 # 创建生产网络（如果不存在）
-docker network create tbk-production-network --subnet=172.23.0.0/16 2>/dev/null || {
+docker network create tbk-production-network --subnet=172.21.0.0/16 2>/dev/null || {
     log_warn "tbk-production-network 已存在，跳过创建"
 }
 

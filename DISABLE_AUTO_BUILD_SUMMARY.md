@@ -6,12 +6,10 @@
 已成功禁用以下项目的自动构建触发器：
 
 - **tbk-pipeline**: 原设置为每5分钟检查一次 (`H/5 * * * *`)
-- **tbk-dev-pipeline**: 原设置为每2分钟检查一次 (`H/2 * * * *`)
 
 ### 2. 配置文件修改
 修改了以下配置文件：
 - `/jenkins_home/jobs/tbk-pipeline/config.xml`
-- `/jenkins_home/jobs/tbk-dev-pipeline/config.xml`
 
 将SCM触发器配置从：
 ```xml
@@ -38,7 +36,6 @@
 ```
 项目名称         自动构建状态
 --------         ------------   
-tbk-dev-pipeline 禁用         
 tbk-pipeline     禁用         
 ```
 
@@ -49,7 +46,7 @@ tbk-pipeline     禁用
 ### 1. Jenkins Web界面
 - 访问: http://localhost:8080
 - 登录Jenkins
-- 选择项目 (tbk-pipeline 或 tbk-dev-pipeline)
+- 选择项目 (tbk-pipeline)
 - 点击 "立即构建" 按钮
 
 ### 2. 使用管理脚本

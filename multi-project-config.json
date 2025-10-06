@@ -29,9 +29,9 @@
         "local": {
           "host": "localhost",
           "port": 3307,
-          "database": "tbk_dev",
-          "user": "tbk_user",
-          "password": "tbk_password"
+          "database": "peach_wiki",
+          "user": "root",
+          "password": "han0419/"
         },
         "cloud": {
           "host": "60.205.0.185",
@@ -63,9 +63,9 @@
         "local": {
           "host": "localhost",
           "port": 3307,
-          "database": "tbk_dev",
-          "user": "tbk_user",
-          "password": "tbk_password"
+          "database": "peach_wiki",
+          "user": "root",
+          "password": "han0419/"
         },
         "cloud": {
           "host": "60.205.0.185",

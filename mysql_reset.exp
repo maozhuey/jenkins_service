@@ -54,8 +54,7 @@ expect "# "
 # 测试连接
 send "mysql -u admin -p'Han0419@MySQL' -e 'SHOW DATABASES;'\r"
 expect "# "
-send "mysql -u admin -p'Han0419@MySQL' -e 'CREATE DATABASE IF NOT EXISTS tbk;'\r"
-expect "# "
+
 send "mysql -u admin -p'Han0419@MySQL' -e 'SHOW DATABASES;'\r"
 expect "# "
 

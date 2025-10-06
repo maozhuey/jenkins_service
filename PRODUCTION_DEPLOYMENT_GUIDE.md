@@ -158,7 +158,7 @@ docker compose logs -f jenkins
 
 如有问题，请联系开发团队或查看相关文档：
 - Jenkins配置文档: `DISABLE_AUTO_BUILD_SUMMARY.md`
-- 开发环境文档: `DEV_ENVIRONMENT_SETUP.md`
+
 - 公共访问指南: `PUBLIC_ACCESS_GUIDE.md`
 
 ---

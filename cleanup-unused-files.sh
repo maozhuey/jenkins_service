@@ -57,7 +57,6 @@ duplicate_files=(
     "Jenkinsfile.aliyun.simplified"
     "tbk-env-production-fixed"
     "tbk-env-docker"
-    "tbk-dockerfile-dev"
     "tbk-dockerfile-production-fixed"
     "tbk-docker-compose-local-fixed.yml"
     "tbk-nginx-production.conf"
